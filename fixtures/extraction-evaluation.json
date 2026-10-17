@@ -1,0 +1,405 @@
+{
+  "description": "50 hand-authored synthetic labelled cases. 10 development, 40 held out. Not marketplace observations or evidence of real-world accuracy.",
+  "cases": [
+    {
+      "id": "case-01",
+      "title": "ThinkPad T14 Gen 2 Intel i5-1135G7 16GB RAM 512GB SSD",
+      "description": "Good condition. Working with charger.",
+      "expected_classification": "complete_laptop",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-02",
+      "title": "ThinkPad T14 Gen 1 AMD Ryzen 5 PRO 4650U 16GB RAM 256GB SSD",
+      "description": "Fair condition. Fully working.",
+      "expected_classification": "complete_laptop",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-03",
+      "title": "ThinkPad T14 Gen 3 Intel i7-1260P 32GB RAM 1024GB SSD",
+      "description": "Excellent condition.",
+      "expected_classification": "complete_laptop",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-04",
+      "title": "ThinkPad T14 Gen 2 screen only",
+      "description": "Replacement panel, no laptop.",
+      "expected_classification": "accessory",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-05",
+      "title": "Lenovo T14 box only",
+      "description": "Empty packaging.",
+      "expected_classification": "accessory",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-06",
+      "title": "ThinkPad T14 Gen 2 Intel 16GB RAM",
+      "description": "BIOS locked, for parts.",
+      "expected_classification": "parts_or_faulty",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-07",
+      "title": "ThinkPad T14 Gen 1 AMD laptop",
+      "description": "Broken, no power.",
+      "expected_classification": "parts_or_faulty",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-08",
+      "title": "Lenovo ThinkPad T14 clearance",
+      "description": "Details not supplied.",
+      "expected_classification": "uncertain",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-09",
+      "title": "Dell Latitude 5420 Intel i5 16GB RAM",
+      "description": "Good condition.",
+      "expected_classification": "out_of_scope",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-10",
+      "title": "ThinkPad T14s Gen 2 Intel i5-1145G7",
+      "description": "Good condition.",
+      "expected_classification": "out_of_scope",
+      "split": "development",
+      "synthetic": true
+    },
+    {
+      "id": "case-11",
+      "title": "Lenovo ThinkPad T14 Gen 2 Intel i5-1145G7 16GB RAM 512GB SSD",
+      "description": "Good condition. Tested and working, charger supplied.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-12",
+      "title": "ThinkPad T14 Gen 1 AMD Ryzen 7 PRO 4750U 32GB RAM 512GB SSD",
+      "description": "Excellent condition, original charger included.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-13",
+      "title": "T14 Gen 3 Intel i5-1240P 16GB RAM 256GB SSD",
+      "description": "Lenovo ThinkPad T14 in fair condition. Fully working.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-14",
+      "title": "ThinkPad T14 Gen 2 AMD Ryzen 5 PRO 5650U 16GB RAM 512GB SSD",
+      "description": "Good condition; small cosmetic marks.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-15",
+      "title": "Lenovo ThinkPad T14 Gen 1 Intel i5-10210U 8GB RAM 256GB SSD",
+      "description": "Fair condition. Includes USB-C power supply.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-16",
+      "title": "ThinkPad T14 Gen 3 AMD Ryzen 5 PRO 6650U 16GB RAM 512GB SSD",
+      "description": "Excellent condition. Business laptop with charger.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-17",
+      "title": "Lenovo ThinkPad T14 Gen 2 Intel i7-1165G7 32GB RAM 1024GB SSD",
+      "description": "Good condition. Keyboard and battery working.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-18",
+      "title": "ThinkPad T14 Gen 1 AMD Ryzen 5 PRO 4650U 8GB RAM 128GB SSD",
+      "description": "Fair condition; charger included.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-19",
+      "title": "ThinkPad T14 Gen 3 Intel i7-1260P 32GB RAM 2048GB SSD",
+      "description": "Good condition, tested by seller.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-20",
+      "title": "ThinkPad T14 Gen 2 Intel i5-1135G7",
+      "description": "16GB RAM, 512GB SSD. Good condition. Includes charger.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-21",
+      "title": "ThinkPad T14 Gen 1 AMD",
+      "description": "Ryzen 5 PRO 4650U. 16GB RAM, 256GB SSD. Excellent condition.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-22",
+      "title": "Business laptop: ThinkPad T14 Gen 3 Intel i5-1240P",
+      "description": "Good condition. 16GB RAM and 512GB SSD.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-23",
+      "title": "ThinkPad T14 Gen 2 AMD Ryzen 7 PRO 5850U 32GB RAM 512GB SSD",
+      "description": "Fair condition, fully working.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-24",
+      "title": "ThinkPad T14 Gen 1 Intel i7-10510U 16GB RAM 1024GB SSD",
+      "description": "Good condition. Includes adapter.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-25",
+      "title": "ThinkPad T14 Gen 3 AMD Ryzen 7 PRO 6850U 32GB RAM 1024GB SSD",
+      "description": "Excellent condition. Factory charger included.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-26",
+      "title": "ThinkPad T14 Gen 2 Intel i5-1145G7 8GB RAM 256GB SSD",
+      "description": "Good condition. Domestic fixed-price sale.",
+      "expected_classification": "complete_laptop",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-27",
+      "title": "USB-C charger for ThinkPad T14 Gen 2",
+      "description": "Charger only, laptop not included.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-28",
+      "title": "Lenovo ThinkPad T14 Gen 1 replacement keyboard",
+      "description": "Keyboard spare part, not a complete computer.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-29",
+      "title": "ThinkPad T14 Gen 3 replacement screen",
+      "description": "Screen only. Device not included.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-30",
+      "title": "ThinkPad T14 Gen 2 empty retail carton",
+      "description": "Box only, no laptop or accessories.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-31",
+      "title": "Lenovo ThinkPad T14 compatible USB-C dock",
+      "description": "Dock only, laptop pictured for illustration.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-32",
+      "title": "Screen protector for ThinkPad T14 14 inch",
+      "description": "Two protective films only.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-33",
+      "title": "ThinkPad T14 laptop carry sleeve",
+      "description": "Protective bag only, no device included.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-34",
+      "title": "Replacement battery for ThinkPad T14 Gen 1",
+      "description": "Battery component only.",
+      "expected_classification": "accessory",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-35",
+      "title": "ThinkPad T14 Gen 2 Intel i5-1135G7 16GB RAM 512GB SSD",
+      "description": "For parts. BIOS locked.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-36",
+      "title": "ThinkPad T14 Gen 1 AMD Ryzen 5 PRO 4650U 16GB RAM",
+      "description": "Broken motherboard. No power.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-37",
+      "title": "ThinkPad T14 Gen 3 Intel i7-1260P 32GB RAM",
+      "description": "Cracked screen. Spares only.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-38",
+      "title": "ThinkPad T14 Gen 2 Intel i5-1145G7",
+      "description": "Faulty USB-C port. Requires repair.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-39",
+      "title": "ThinkPad T14 Gen 1 AMD Ryzen 7 PRO 4750U",
+      "description": "Battery dead. Sold for parts.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-40",
+      "title": "ThinkPad T14 Gen 3 Intel i5-1240P",
+      "description": "Password locked. Cannot boot into operating system.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-41",
+      "title": "ThinkPad T14 Gen 2 AMD Ryzen 5 PRO 5650U",
+      "description": "Non-working laptop. Repair project.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-42",
+      "title": "ThinkPad T14 Gen 1 Intel i5-10210U",
+      "description": "Damaged display, parts only.",
+      "expected_classification": "parts_or_faulty",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-43",
+      "title": "Lenovo business laptop clearance",
+      "description": "Model and specifications not supplied.",
+      "expected_classification": "uncertain",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-44",
+      "title": "ThinkPad laptop, maybe T14 or another model",
+      "description": "Seller does not know exact model.",
+      "expected_classification": "uncertain",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-45",
+      "title": "Office laptop bundle details on request",
+      "description": "Unclear model, configuration and condition.",
+      "expected_classification": "uncertain",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-46",
+      "title": "Laptop",
+      "description": "No description or identifying details.",
+      "expected_classification": "uncertain",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-47",
+      "title": "ThinkPad T14s Gen 3 AMD Ryzen 7 PRO 6850U",
+      "description": "Good condition, not the T14 model.",
+      "expected_classification": "out_of_scope",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-48",
+      "title": "Apple MacBook Air M1 16GB RAM 256GB SSD",
+      "description": "Good condition.",
+      "expected_classification": "out_of_scope",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-49",
+      "title": "Lenovo ThinkPad T480 Intel i5 16GB RAM 512GB SSD",
+      "description": "Excellent condition.",
+      "expected_classification": "out_of_scope",
+      "split": "holdout",
+      "synthetic": true
+    },
+    {
+      "id": "case-50",
+      "title": "Lenovo ThinkPad T14p Gen 1 Intel i7",
+      "description": "Good condition.",
+      "expected_classification": "out_of_scope",
+      "split": "holdout",
+      "synthetic": true
+    }
+  ]
+}

@@ -36,9 +36,11 @@ class ProviderError(RuntimeError):
     pass
 
 
-def request_json(url, payload=None, *, timeout=15, retries=0):
+def request_json(url, payload=None, *, timeout=15, retries=0, on_attempt=None):
     """Retry only transient provider errors. Never surface URLs containing credentials."""
     for attempt in range(retries + 1):
+        if on_attempt:
+            on_attempt()
         try:
             req = Request(url, data=None if payload is None else json.dumps(payload).encode(),
                           headers={"Content-Type": "application/json", "User-Agent": "FlipCheck/0.1"})
@@ -102,6 +104,9 @@ def parse_serpapi(result):
     """Conservative adapter: refuse ambiguous currency, location, formats, and ranges."""
     listings, skipped = [], []
     organic = result.get("organic_results", [])
+    parameters = result.get("search_parameters", {})
+    domestic_filter = str(parameters.get("LH_PrefLoc")) == "1" and parameters.get("ebay_domain") == "ebay.com.au"
+    fixed_filter = parameters.get("buying_format") == "BIN"
     if not isinstance(organic, list):
         raise ProviderError("Search response has an unexpected organic_results shape.")
     for item in organic[:20]:
@@ -114,35 +119,42 @@ def parse_serpapi(result):
             raw_price = str(price.get("raw", ""))
             if not re.search(r"(?:AU\s*\$|AUD)", raw_price, re.I):
                 raise ValueError("AUD currency not explicit in provider result.")
-            if item.get("buying_format") != "buy_it_now":
+            if item.get("buying_format") != "buy_it_now" and not (fixed_filter and item.get("buying_format") == "accepts_offers"):
                 raise ValueError("Fixed-price buying format is not explicit.")
-            if not re.search(r"\bAustralia\b", str(item.get("location", "")), re.I):
+            location = item.get("location")
+            if location and not re.search(r"\bAustralia\b", str(location), re.I):
                 raise ValueError("Domestic Australian location is not explicit.")
-            shipping_text = str(item.get("shipping", ""))
+            if not location and not domestic_filter:
+                raise ValueError("No item location or confirmed domestic search filter.")
+            shipping_raw = item.get("shipping", "")
+            shipping_text = str(shipping_raw.get("raw", "")) if isinstance(shipping_raw, dict) else str(shipping_raw)
             shipping = 0 if re.search(r"free (?:delivery|postage|shipping)", shipping_text, re.I) else None
             if shipping is None:
                 match = re.search(r"(?:AU\s*\$|AUD\s*)([\d,]+(?:\.\d{2})?)", shipping_text, re.I)
                 if match:
                     shipping = match.group(1).replace(",", "")
-            listings.append(normalize_listing({
+            listing = normalize_listing({
                 "external_id": item.get("product_id", ""), "url": item.get("link"),
                 "title": item.get("title"), "description": "\n".join(str(item.get(k, "")) for k in ("condition", "subtitle", "snippet")),
                 "asking_price": price["extracted"], "inbound_shipping": shipping,
                 "currency": "AUD", "country": "AU", "buying_format": "fixed_price",
                 "has_variations": item.get("has_variations", False),
-            }))
+            })
+            listing["location_basis"] = str(location) if location else "SerpApi domestic AU search filter; confirm on original listing"
+            listings.append(listing)
         except (ValueError, TypeError) as exc:
             skipped.append({"title": str(item.get("title", "Unknown"))[:200] if isinstance(item, dict) else "Unknown", "reason": str(exc)})
     return listings, skipped
 
 
-def search_ebay(settings):
+def search_ebay(settings, on_request=None):
     key = os.getenv("SERPAPI_KEY")
     if not key:
         raise ProviderError("SERPAPI_KEY is not configured. Import listings or load the synthetic demo instead.")
     params = {"engine": "ebay", "ebay_domain": "ebay.com.au", "_nkw": settings["query"],
-              "buying_format": "BIN", "_udhi": settings["max_price"], "api_key": key}
-    result = request_json("https://serpapi.com/search.json?" + urlencode(params), timeout=30, retries=1)
+              "buying_format": "BIN", "LH_PrefLoc": "1", "_ipg": "25",
+              "_udhi": settings["max_price"], "api_key": key}
+    result = request_json("https://serpapi.com/search.json?" + urlencode(params), timeout=30, retries=1, on_attempt=on_request)
     if result.get("error"):
         raise ProviderError("Search provider reported an error. Check your quota and search parameters.")
     return parse_serpapi(result)

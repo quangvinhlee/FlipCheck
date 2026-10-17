@@ -5,7 +5,7 @@ import os
 import threading
 import time
 from .domain import VERSION, now, normalize_listing, normalize_comparison, source_text, validate_extraction, validate_settings, value_listing
-from .providers import Ollama, ProviderError, search_ebay
+from .providers import Ollama, ProviderError, SCHEMA, SYSTEM, search_ebay
 from .demo import demo_data
 
 
@@ -36,7 +36,7 @@ class App:
         return {"mode": "demo" if synthetic else "local", "settings": settings, "listings": listings,
                 "comparisons": comparisons, "scans": self.store.scans(), "job": self.job,
                 "health": self.health(), "counts": {"scanned": len(listings), "excluded": sum(x["extraction"]["status"] == "rejected" for x in listings),
-                    "review": sum(x["extraction"]["status"] == "needs_review" or x["inbound_shipping"] is None for x in listings),
+                    "review": sum(x["extraction"]["status"] != "rejected" and (x["extraction"]["status"] == "needs_review" or x["inbound_shipping"] is None) for x in listings),
                     "opportunities": sum(x["valuation"]["opportunity"] for x in listings)}}
 
     def snapshot_all(self, synthetic):
@@ -121,11 +121,13 @@ class App:
 
     def _run(self, job, kind, listings):
         started = time.monotonic()
+        final_status = "failed"
         try:
             if kind == "live":
                 # Search performs at most two network attempts (one transient retry).
-                job["requests"] = 1
-                listings, skipped = search_ebay(self.store.config("settings"))
+                def count_request():
+                    job["requests"] += 1
+                listings, skipped = search_ebay(self.store.config("settings"), on_request=count_request)
                 job["skipped"] = skipped
                 job["total"] = len(listings)
             metadata = self.health()
@@ -133,7 +135,7 @@ class App:
                 listing_id, _ = self.store.upsert(listing)
                 text = source_text(listing)
                 job["message"] = f"Analysing {job['processed'] + 1} of {job['total']}: {listing['title'][:80]}"
-                key = hashlib.sha256((VERSION + self.model.model + str(metadata.get("digest")) + text).encode()).hexdigest()
+                key = hashlib.sha256((VERSION + SYSTEM + json.dumps(SCHEMA, sort_keys=True) + self.model.model + str(metadata.get("digest")) + text).encode()).hexdigest()
                 try:
                     cached = None if kind == "analyse" else self.store.cache(key)
                     if cached:
@@ -150,16 +152,16 @@ class App:
                     job["errors"].append(f"{listing['external_id']}: {exc}")
                 job["processed"] += 1
             self.snapshot_all(self.store.config("mode") == "demo")
-            job["status"] = "partial" if job["errors"] or job["skipped"] else "completed"
+            final_status = "partial" if job["errors"] or job["skipped"] else "completed"
             job["message"] = f"Processed {job['processed']} listings; {len(job['skipped'])} provider results skipped; {len(job['errors'])} analysis failures."
         except Exception as exc:
-            job["status"] = "failed"
+            final_status = "failed"
             job["message"] = str(exc) if isinstance(exc, (ValueError, ProviderError)) else "Scan failed unexpectedly. Previously saved results are preserved."
             job["errors"].append(job["message"])
         finally:
-            job["finished_at"] = now()
-            job["elapsed_seconds"] = round(time.monotonic() - started, 2)
-            self.store.scan(job)
+            finished = job | {"finished_at": now(), "elapsed_seconds": round(time.monotonic() - started, 2), "status": final_status}
+            self.store.scan(finished)
+            job.update(finished)
 
     def decision(self, listing_id, value):
         self.store.decide(listing_id, value)

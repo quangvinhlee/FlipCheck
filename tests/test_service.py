@@ -78,11 +78,13 @@ class ServiceTests(unittest.TestCase):
             req=Request(base+"/api/demo",data=b'{}',headers={"Content-Type":"application/json"})
             with self.assertRaises(HTTPError) as error: urlopen(req)
             self.assertEqual(error.exception.code,403)
+            error.exception.close()
             req.add_header("X-FlipCheck-Token",state["csrf_token"])
             with urlopen(req) as response: self.assertEqual(response.status,200)
             req.add_header("Origin","https://example.com")
             with self.assertRaises(HTTPError) as error: urlopen(req)
             self.assertEqual(error.exception.code,403)
+            error.exception.close()
         finally:
             server.shutdown();server.server_close();thread.join()
     def test_provider_normalization(self):
@@ -91,5 +93,33 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(len(accepted),1)
         self.assertEqual(accepted[0]["inbound_shipping"],0)
         self.assertEqual(len(skipped),2)
+
+    def test_live_provider_contract_uses_echoed_domestic_filter(self):
+        row={"title":raw_listing()["title"], "product_id":"123456789012", "price":{"raw":"AU $240.00","extracted":240}, "shipping":{"raw":"+AU $15.00 delivery","extracted":15}, "buying_format":"accepts_offers"}
+        parameters={"LH_PrefLoc":"1","ebay_domain":"ebay.com.au","buying_format":"BIN"}
+        accepted,skipped=parse_serpapi({"search_parameters":parameters,"organic_results":[row]})
+        self.assertEqual(len(accepted),1)
+        self.assertEqual(accepted[0]["inbound_shipping"],15)
+        self.assertIn("domestic AU search filter",accepted[0]["location_basis"])
+        accepted,skipped=parse_serpapi({"organic_results":[row]})
+        self.assertEqual(len(accepted),0)
+
+    def test_source_change_invalidates_human_corrections(self):
+        listing=normalize_listing(raw_listing())
+        item_id,_=self.store.upsert(listing)
+        self.store.set_extraction(item_id,{"status":"eligible"},"Human note")
+        self.store.upsert(listing|{"description":"Changed specifications from seller."})
+        current=self.store.listing(item_id)
+        self.assertIsNone(current["extraction"])
+        self.assertIsNone(current["correction"])
+
+    def test_provider_failure_preserves_listing_for_review(self):
+        class BrokenModel(FakeModel):
+            def extract(self,text): raise ProviderError("Local model unavailable")
+        self.app.model=BrokenModel()
+        self.app.start("import",[raw_listing()]); self.wait_job()
+        self.assertEqual(self.app.job["status"],"partial")
+        self.assertEqual(len(self.store.listings(False)),1)
+        self.assertEqual(self.store.listings(False)[0]["extraction"]["status"],"needs_review")
 
 if __name__=="__main__": unittest.main()

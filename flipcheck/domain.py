@@ -5,7 +5,7 @@ import re
 from statistics import median
 from urllib.parse import urlparse
 
-VERSION = "extract-v1"
+VERSION = "extract-v2"
 SPEC_FIELDS = ("model", "generation", "variant", "cpu", "ram_gb", "storage_gb", "condition")
 CLASSIFICATIONS = {"complete_laptop", "accessory", "parts_or_faulty", "out_of_scope", "uncertain"}
 DEFAULT_SETTINGS = {
@@ -99,7 +99,7 @@ def normalize_listing(raw, *, synthetic=False):
         raise ValueError("Only AUD listings are supported; currencies are never silently converted.")
     if raw.get("country") != "AU" or raw.get("buying_format") != "fixed_price":
         raise ValueError("Only explicitly domestic AU fixed-price listings are supported.")
-    if raw.get("has_variations") not in {None, False}:
+    if raw.get("has_variations") is not None and raw.get("has_variations") is not False:
         raise ValueError("Multi-variation listings require manual inspection and are not supported.")
     return {
         "external_id": external_id, "marketplace": "demo" if synthetic else "ebay_au",
@@ -161,7 +161,7 @@ def validate_extraction(draft, text):
         else:
             errors.append(f"{field}: value is unsupported or outside the supported scope.")
     lower = text.lower()
-    fault = re.search(r"\b(for parts|not working|broken|bios locked|bios password|password locked|cracked screen|battery dead|no power|spares only)\b", lower)
+    fault = re.search(r"\b(for parts|parts only|not working|non-working|broken|faulty|damaged|bios locked|bios password|password locked|cracked screen|battery dead|dead battery|no power|spares only)\b", lower)
     accessory = re.search(r"\b(box only|charger only|screen only|dock only|replacement screen|replacement keyboard)\b", lower)
     injection = re.search(r"ignore (?:all |previous |the )*(?:instructions|rules)|system prompt|return .*complete_laptop", lower)
     if fault:
@@ -170,6 +170,14 @@ def validate_extraction(draft, text):
         classification = "accessory"
     if injection:
         errors.append("Instruction-like text in the listing requires human review.")
+    if re.search(r"\b(no charger|missing charger|not tested|untested)\b", lower):
+        errors.append("Missing charger or untested hardware requires human review.")
+    if re.search(r"\bnot (?:in )?(?:good|excellent|fair)\b", lower):
+        errors.append("Negated condition statement requires review.")
+    if facts.get("variant") == "Intel" and re.search(r"ryzen", str(facts.get("cpu")), re.I):
+        errors.append("CPU conflicts with the extracted Intel platform.")
+    if facts.get("variant") == "AMD" and re.search(r"\bi[3579]-", str(facts.get("cpu")), re.I):
+        errors.append("CPU conflicts with the extracted AMD platform.")
     # Detect common specification conflicts independently of the model.
     gens = set(re.findall(r"\bgen(?:eration)?\s*([1-3])\b", lower))
     rams = set(re.findall(r"\b(4|8|16|24|32|40|48|64)\s*gb\s*(?:ram|memory)\b", lower))
@@ -200,6 +208,9 @@ def normalize_comparison(raw, *, synthetic=False):
     for key in ("verified", "actual_price_known"):
         if raw.get(key) is not True:
             raise ValueError(f"Sold comparisons require {key}=true; asking prices are not sales.")
+    for key in ("external_id", "source", "reference", "sold_at", "collected_at"):
+        if not isinstance(raw[key], str) or not raw[key].strip() or len(raw[key]) > 1000:
+            raise ValueError(f"Comparison {key} must be a non-empty string under 1000 characters.")
     if raw.get("currency") != "AUD" or raw.get("country") != "AU":
         raise ValueError("Sold comparisons must be domestic AU sales in AUD.")
     sold_at = date.fromisoformat(raw["sold_at"])

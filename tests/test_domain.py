@@ -88,5 +88,19 @@ class DomainTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize_comparison(comparison(1, sold_at="2099-01-01"))
 
+    def test_negated_condition_missing_charger_and_cpu_conflict(self):
+        text=raw_listing()["title"]
+        for suffix in [" Not in good condition."," No charger."," Untested."]:
+            with self.subTest(suffix=suffix):
+                self.assertEqual(validate_extraction(draft(),text+suffix)["status"],"needs_review")
+        changed=draft();changed["cpu"]={"value":"Ryzen 5 PRO 4650U","evidence":"Ryzen 5 PRO 4650U"}
+        self.assertEqual(validate_extraction(changed,text+" Ryzen 5 PRO 4650U")["status"],"needs_review")
+
+    def test_malformed_comparison_identity_and_variations(self):
+        with self.assertRaises(ValueError):
+            normalize_comparison(comparison(1,external_id={"bad":"type"}))
+        with self.assertRaises(ValueError):
+            normalize_listing(raw_listing(has_variations=0))
+
 if __name__ == "__main__":
     unittest.main()

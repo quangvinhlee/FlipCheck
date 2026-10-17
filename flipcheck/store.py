@@ -59,6 +59,9 @@ class Store:
             return json.loads(row[0]) if row else None
 
     def upsert(self, listing):
+        listing = {key: value for key, value in listing.items() if key in {
+            "external_id", "marketplace", "title", "description", "url", "asking_price",
+            "inbound_shipping", "currency", "country", "buying_format", "synthetic", "location_basis"}}
         timestamp = now()
         digest = hashlib.sha256(source_text(listing).encode()).hexdigest()
         with self.connection() as db:
