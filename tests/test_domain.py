@@ -102,5 +102,14 @@ class DomainTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize_listing(raw_listing(has_variations=0))
 
+    def test_malformed_model_values_go_to_review(self):
+        invalid=draft()
+        invalid["classification"]=["complete_laptop"]
+        invalid["ram_gb"]={"value":{"unexpected":16},"evidence":"16GB RAM"}
+        invalid["condition"]={"value":["good"],"evidence":"good condition"}
+        checked=validate_extraction(invalid,raw_listing()["title"])
+        self.assertEqual(checked["status"],"needs_review")
+        self.assertIsNone(checked["facts"]["ram_gb"])
+
 if __name__ == "__main__":
     unittest.main()

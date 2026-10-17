@@ -125,7 +125,7 @@ def validate_extraction(draft, text):
     if not isinstance(draft, dict):
         return {"classification": "uncertain", "facts": {}, "evidence": {}, "errors": ["Model output is not an object."], "status": "needs_review", "reason": "Extraction failed validation."}
     classification = draft.get("classification")
-    if classification not in CLASSIFICATIONS:
+    if not isinstance(classification, str) or classification not in CLASSIFICATIONS:
         classification = "uncertain"
         errors.append("Unknown classification.")
     for field in SPEC_FIELDS:
@@ -136,6 +136,11 @@ def validate_extraction(draft, text):
         value, quote = item.get("value"), item.get("evidence")
         if value is None:
             facts[field] = None
+            continue
+        expected_numeric = field in {"generation", "ram_gb", "storage_gb"}
+        if (expected_numeric and type(value) is not int) or (not expected_numeric and not isinstance(value, str)):
+            facts[field] = None
+            errors.append(f"{field}: unexpected value type.")
             continue
         if not isinstance(quote, str) or not quote.strip() or quote not in text:
             errors.append(f"{field}: evidence does not occur in the listing.")
