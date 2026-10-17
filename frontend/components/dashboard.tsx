@@ -41,8 +41,16 @@ import {
   scenario,
   specLine,
 } from "@/lib/format";
-import type { Filter, Job, Listing, View, Workspace } from "@/lib/types";
+import type {
+  Filter,
+  Job,
+  Listing,
+  View,
+  Workspace,
+  Watchlist,
+} from "@/lib/types";
 import Modal from "./modal";
+import WatchlistManager, { CategoryIcon } from "./watchlists";
 import LaptopArt from "./laptop-art";
 import Evidence, { Badge } from "./evidence";
 import { CorrectionForm, Help, ImportForm, SettingsForm } from "./forms";
@@ -96,14 +104,44 @@ export default function Dashboard() {
     [selected, setSelected] = useState<number | null>(null),
     [correction, setCorrection] = useState<number | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
+  const [editing, setEditing] = useState<Watchlist | null | undefined>(
+    undefined,
+  );
+  const [searchFilter, setSearchFilter] = useState("all");
+  const effectiveSearch = data?.watchlists.some(
+    (w) => String(w.id) === searchFilter,
+  )
+    ? searchFilter
+    : "all";
+  const displayItems = (data?.listings || []).map((x) => {
+    const chosen =
+      effectiveSearch === "all"
+        ? x.display_watchlist_id
+        : Number(effectiveSearch);
+    return {
+      ...x,
+      valuation: x.valuations[String(chosen)] || x.valuation,
+      valuation_source:
+        data?.watchlists.find((w) => w.id === chosen)?.name || "Unassigned",
+      watchlist_names:
+        data?.watchlists
+          .filter((w) => x.watchlist_ids.includes(w.id))
+          .map((w) => w.name) || [],
+    };
+  });
   const copy = viewCopy[view],
     running = data?.job?.status === "running",
     locked = !!pending || running;
-  const selectedItem = data?.listings.find((x) => x.id === selected),
-    correctionItem = data?.listings.find((x) => x.id === correction);
+  const selectedItem = displayItems.find((x) => x.id === selected),
+    correctionItem = displayItems.find((x) => x.id === correction);
   const items = useMemo(() => {
     if (!data) return [];
-    return data.listings
+    return displayItems
+      .filter(
+        (x) =>
+          effectiveSearch === "all" ||
+          x.watchlist_ids.includes(Number(effectiveSearch)),
+      )
       .filter((x) => view !== "saved" || x.decision === "saved")
       .filter(
         (x) =>
@@ -127,7 +165,7 @@ export default function Dashboard() {
             ? b.id - a.id
             : (scenario(b)?.margin ?? -1e12) - (scenario(a)?.margin ?? -1e12),
       );
-  }, [data, filter, query, sort, view]);
+  }, [data, filter, query, sort, view, effectiveSearch]);
   const navigate = (next: View) => {
     setView(next);
     setFilter("all");
@@ -142,11 +180,7 @@ export default function Dashboard() {
         ? "Listing removed from saved."
         : "Good find. Saved to your shortlist.",
     ).catch(() => {});
-  const demo = () =>
-    void mutate("demo")
-      .then(() => navigate("scout"))
-      .catch(() => {});
-  const scan = () => {
+  const scan = (ids?: number[]) => {
     if (!data?.health.serpapi_configured) {
       notify(
         "Add SERPAPI_KEY to your local .env and restart the Python service, or import listings.",
@@ -163,7 +197,7 @@ export default function Dashboard() {
     }
     void mutate(
       "scan",
-      {},
+      ids ? { watchlist_ids: ids } : {},
       "Scanning eBay Australia. Gemma will analyse each result locally.",
     )
       .then(() => navigate("scout"))
@@ -250,7 +284,10 @@ export default function Dashboard() {
               {data?.health.available ? "Gemma 4 connected" : "Local analysis"}
             </span>
           </div>
-          <button className="nav-link" onClick={() => setPanel("settings")}>
+          <button
+            className="nav-link"
+            onClick={() => setEditing(data?.watchlists[0] || null)}
+          >
             <SlidersHorizontal size={18} />
             <span>Watchlist & costs</span>
           </button>
@@ -326,14 +363,16 @@ export default function Dashboard() {
               <button
                 className="button primary"
                 disabled={!data || locked}
-                onClick={scan}
+                onClick={() => scan()}
               >
                 {running ? (
                   <LoaderCircle size={17} className="spin" />
                 ) : (
                   <Radar size={17} />
                 )}
-                {running ? "Analysing…" : "Scan eBay"}
+                {running
+                  ? "Analysing…"
+                  : `Scan all (${data?.watchlists.filter((w) => w.enabled).length || 0})`}
                 <ArrowUpRight size={17} />
               </button>
             </div>
@@ -351,93 +390,24 @@ export default function Dashboard() {
             <Loading />
           ) : (
             <>
-              <div
-                className={`workspace-banner ${data.mode === "demo" ? "demo" : ""}`}
-              >
+              <div className="workspace-banner">
                 <div className="workspace-banner-copy">
-                  {data.mode === "demo" ? (
-                    <Box size={17} />
-                  ) : (
-                    <ShieldCheck size={17} />
-                  )}
-                  <strong>
-                    {data.mode === "demo"
-                      ? "Demo workspace"
-                      : "Your local workspace"}
-                  </strong>
+                  <ShieldCheck size={17} />
+                  <strong>Real listings only</strong>
                   <span>
-                    {data.mode === "demo"
-                      ? "Synthetic listings and sales. A look at the workflow, not real deals."
-                      : "Analysis stays on this machine. Live searches are sent to SerpApi."}
+                    Searches go to eBay AU through SerpApi. Gemma 4 analyses
+                    locally. No sample listings or sales.
                   </span>
                 </div>
-                <button
-                  className="text-button"
-                  disabled={locked}
-                  onClick={
-                    data.mode === "demo"
-                      ? () =>
-                          void mutate(
-                            "mode",
-                            { mode: "local" },
-                            "Opened your own workspace.",
-                          ).catch(() => {})
-                      : demo
-                  }
-                >
-                  {data.mode === "demo"
-                    ? "Switch to my workspace"
-                    : "Explore synthetic demo"}
-                  <ArrowRight size={14} />
-                </button>
               </div>
-              <section className="watchlist-card" aria-label="Active watchlist">
-                <div className="watchlist-main">
-                  <span className="watchlist-icon">
-                    <Radar size={23} />
-                  </span>
-                  <div>
-                    <span className="eyebrow">YOUR ACTIVE WATCHLIST</span>
-                    <h2>
-                      {data.settings.query}
-                      <span>Gen 1–3</span>
-                    </h2>
-                    <p>
-                      <span className="country-marker">AU</span>eBay Australia
-                      <span className="bullet">·</span>Fixed price
-                      <span className="bullet">·</span>Domestic
-                    </p>
-                  </div>
-                </div>
-                <div className="watchlist-numbers">
-                  <div>
-                    <span>Buy under</span>
-                    <strong>{aud(data.settings.max_price)}</strong>
-                  </div>
-                  <div>
-                    <span>Target margin</span>
-                    <strong className="green-text">
-                      {aud(data.settings.min_margin)}
-                      <span>+</span>
-                    </strong>
-                  </div>
-                  <button
-                    className="button quiet"
-                    disabled={locked}
-                    onClick={() => setPanel("settings")}
-                  >
-                    <SlidersHorizontal size={15} />
-                    <span>Edit watchlist</span>
-                  </button>
-                </div>
-                <div className="watchlist-decoration" aria-hidden="true">
-                  <Radar size={125} strokeWidth={0.5} />
-                </div>
-              </section>
-              {data.job &&
-                (data.mode === "local" || data.job.kind === "analyse") && (
-                  <JobBanner job={data.job} />
-                )}
+              <WatchlistManager
+                watchlists={data.watchlists}
+                onEdit={setEditing}
+                onAdd={() => setEditing(null)}
+                onScan={scan}
+                locked={!!locked}
+              />
+              {data.job && <JobBanner job={data.job} />}
               <section className="stats-grid" aria-label="Workspace summary">
                 <Stat
                   icon={Monitor}
@@ -449,11 +419,7 @@ export default function Dashboard() {
                   icon={ArrowUpRight}
                   label="Worth a closer look"
                   value={data.counts.opportunities}
-                  note={
-                    data.mode === "demo"
-                      ? "Synthetic examples only"
-                      : "Conservative margin meets target"
-                  }
+                  note="Conservative margin meets target"
                   accent
                 />
                 <Stat
@@ -521,6 +487,21 @@ export default function Dashboard() {
                 </div>
                 {(view === "scout" || view === "saved") && (
                   <div className="feed-toolbar">
+                    <label className="search-filter">
+                      <span className="sr-only">Filter by search</span>
+                      <select
+                        aria-label="Filter by search"
+                        value={effectiveSearch}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                      >
+                        <option value="all">All searches</option>
+                        {data.watchlists.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <div
                       className="filter-tabs"
                       role="group"
@@ -586,7 +567,7 @@ export default function Dashboard() {
                       <table className="deal-table">
                         <thead>
                           <tr>
-                            <th>LAPTOP & SPECIFICATIONS</th>
+                            <th>PRODUCT & SPECIFICATIONS</th>
                             <th>ASKING PRICE</th>
                             <th>RESALE ESTIMATE</th>
                             <th>
@@ -629,7 +610,7 @@ export default function Dashboard() {
                   <Empty
                     view={view}
                     fresh={!data.listings.length}
-                    onDemo={demo}
+                    onAdd={() => setEditing(null)}
                     onImport={() => setPanel("import")}
                     onReset={() => {
                       navigate("scout");
@@ -641,9 +622,7 @@ export default function Dashboard() {
                 <div className="feed-footer">
                   <span>
                     <ShieldCheck size={14} />
-                    {data.mode === "demo"
-                      ? "Synthetic examples. No actual transactions or profits."
-                      : "Evidence-backed estimates. Always inspect before buying."}
+                    Evidence-backed estimates. Always inspect before buying.
                   </span>
                   <span>
                     <i />
@@ -688,17 +667,14 @@ export default function Dashboard() {
           }
           onClose={() => setPanel(null)}
         >
-          {panel === "settings" && data ? (
-            <SettingsForm
-              settings={data.settings}
-              mutate={mutate}
-              pending={!!pending}
-              onClose={() => setPanel(null)}
-            />
-          ) : panel === "help" ? (
+          {panel === "help" ? (
             <Help data={data} />
           ) : (
             <ImportForm
+              watchlists={data?.watchlists || []}
+              selectedWatchlist={
+                effectiveSearch === "all" ? undefined : Number(effectiveSearch)
+              }
               initialKind={
                 panel === "import-sales" ? "comparisons" : "listings"
               }
@@ -712,6 +688,21 @@ export default function Dashboard() {
           )}
         </Modal>
       )}
+      {editing !== undefined && data && (
+        <Modal
+          title={editing ? "Edit product search" : "Add a product search"}
+          eyebrow="MULTIPLE PRODUCT SEARCHES"
+          onClose={() => setEditing(undefined)}
+        >
+          <SettingsForm
+            settings={editing || { ...data.settings, query: "" }}
+            watchlist={editing ?? undefined}
+            mutate={mutate}
+            pending={!!pending}
+            onClose={() => setEditing(undefined)}
+          />
+        </Modal>
+      )}
       {selectedItem && (
         <Modal
           title="Listing evidence"
@@ -721,6 +712,7 @@ export default function Dashboard() {
         >
           <Evidence
             item={selectedItem}
+            watchlists={data?.watchlists || []}
             mutate={mutate}
             pending={!!pending || !!running}
             onClose={() => setSelected(null)}
@@ -811,7 +803,8 @@ function DealRow({
     <tr className={x.decision === "dismissed" ? "dismissed" : ""}>
       <td>
         <div className="listing-product">
-          <LaptopArt
+          <ProductArt
+            category={x.extraction.category}
             variant={
               x.extraction.classification === "accessory"
                 ? "accessory"
@@ -827,11 +820,13 @@ function DealRow({
                 : x.title}
             </button>
             <p>{specLine(x)}</p>
+            <span className="matched-searches">
+              {x.watchlist_names?.join(" · ")}
+              <span>Costs: {x.valuation_source}</span>
+            </span>
             <span className="listing-source">
               <span className="source-dot" />
-              {x.synthetic
-                ? "Synthetic example"
-                : `eBay AU · ${relative(x.last_seen)}`}
+              {`eBay AU · ${relative(x.last_seen)}`}
             </span>
           </div>
         </div>
@@ -856,9 +851,7 @@ function DealRow({
               <span>–</span>
               {aud(v.range.high)}
             </strong>
-            <span className="cell-note">
-              {v.count} {x.synthetic ? "synthetic" : "verified"} sales
-            </span>
+            <span className="cell-note">{v.count} verified sales</span>
           </>
         ) : v.range?.assumed != null ? (
           <>
@@ -941,9 +934,7 @@ function DealCard({
       className={`deal-card ${x.decision === "dismissed" ? "dismissed" : ""}`}
     >
       <div className="deal-card-art">
-        <span className="deal-card-source">
-          {x.synthetic ? "SYNTHETIC EXAMPLE" : "EBAY AUSTRALIA"}
-        </span>
+        <span className="deal-card-source">EBAY AUSTRALIA</span>
         <button
           className={`icon-button ${x.decision === "saved" ? "is-saved" : ""}`}
           onClick={onSave}
@@ -955,7 +946,8 @@ function DealCard({
             fill={x.decision === "saved" ? "currentColor" : "none"}
           />
         </button>
-        <LaptopArt
+        <ProductArt
+          category={x.extraction.category}
           large
           variant={
             x.extraction.classification === "accessory"
@@ -974,6 +966,10 @@ function DealCard({
             : x.title}
         </button>
         <p>{specLine(x)}</p>
+        <span className="matched-searches">
+          {x.watchlist_names?.join(" · ")}
+          <span>Costs: {x.valuation_source}</span>
+        </span>
         <div className="deal-card-numbers">
           <div>
             <span>Asking price</span>
@@ -997,20 +993,22 @@ function DealCard({
 function Empty({
   view,
   fresh,
-  onDemo,
+  onAdd,
   onImport,
   onReset,
 }: {
   view: View;
   fresh: boolean;
-  onDemo: () => void;
+  onAdd: () => void;
   onImport: () => void;
   onReset: () => void;
 }) {
   return (
     <div className="empty-state">
       <div className="empty-art">
-        <LaptopArt large />
+        <span className="empty-search-icon">
+          <Radar size={66} strokeWidth={1} />
+        </span>
         <span className="empty-floating">
           <Search size={24} />
         </span>
@@ -1037,8 +1035,8 @@ function Empty({
       <div>
         {fresh && view === "scout" ? (
           <>
-            <button className="button primary" onClick={onDemo}>
-              Explore synthetic demo
+            <button className="button primary" onClick={onAdd}>
+              Add product search
               <ArrowRight size={16} />
             </button>
             <button className="button secondary" onClick={onImport}>
@@ -1099,10 +1097,20 @@ function Sales({ data, onImport }: { data: Workspace; onImport: () => void }) {
               <tr key={`${c.source}-${c.external_id}`}>
                 <td>
                   <strong>
-                    {c.model} · Gen {c.generation}
+                    {c.model}
+                    {c.generation ? ` · ${c.generation}` : ""}
                   </strong>
                   <span className="cell-note">
-                    {c.cpu} · {c.ram_gb}GB RAM · {c.storage_gb}GB SSD
+                    {[
+                      c.category,
+                      c.cpu,
+                      c.ram_gb ? `${c.ram_gb}GB RAM` : null,
+                      c.storage_gb ? `${c.storage_gb}GB SSD` : null,
+                      c.lens,
+                      c.bundle,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 </td>
                 <td>
@@ -1128,11 +1136,7 @@ function Sales({ data, onImport }: { data: Workspace; onImport: () => void }) {
         </table>
       </div>
       <div className="library-action">
-        <p>
-          {data.mode === "demo"
-            ? "These are simulated sales, isolated from your real workspace."
-            : "Sales verification is asserted by you, not independently audited."}
-        </p>
+        <p>Sales verification is asserted by you, not independently audited.</p>
         <button className="text-button" onClick={onImport}>
           Import sales
           <ArrowUpRight size={15} />
@@ -1218,7 +1222,7 @@ function ScanHistory({
         <h3>A clear record of every scan.</h3>
         <p>
           Your imports and live scans appear here, including partial results and
-          errors. Demo replay doesn’t count as live analysis.
+          errors. Only real imports and live analysis runs are recorded.
         </p>
         <button className="button secondary" onClick={onImport}>
           Import listings
@@ -1288,6 +1292,27 @@ function Loading() {
       <LoaderCircle className="spin" size={26} />
       <h2>Opening your sourcing desk</h2>
       <p>Connecting to your local analysis service…</p>
+    </div>
+  );
+}
+
+function ProductArt({
+  category,
+  variant,
+  large,
+}: {
+  category?: string;
+  variant?: "normal" | "faulty" | "accessory";
+  large?: boolean;
+}) {
+  return category === "laptop" ? (
+    <LaptopArt variant={variant} large={large} />
+  ) : (
+    <div
+      className={`laptop-art category-art ${large ? "large" : ""}`}
+      aria-hidden="true"
+    >
+      <CategoryIcon category={category} size={large ? 58 : 31} />
     </div>
   );
 }

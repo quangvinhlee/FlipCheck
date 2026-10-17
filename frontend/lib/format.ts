@@ -52,7 +52,7 @@ export function assessment(item: Listing): {
     };
   if (item.valuation.opportunity)
     return {
-      label: item.synthetic ? "Demo opportunity" : "Worth inspecting",
+      label: "Worth inspecting",
       tone: "green",
       short: "Conservative margin meets target",
     };
@@ -79,6 +79,10 @@ export function specLine(item: Listing) {
   return (
     [
       f.cpu,
+      f.gpu,
+      f.lens,
+      f.bundle,
+      f.edition,
       f.ram_gb ? `${f.ram_gb}GB RAM` : null,
       f.storage_gb ? `${f.storage_gb}GB SSD` : null,
     ]

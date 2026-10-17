@@ -1,6 +1,13 @@
 export type View = "scout" | "saved" | "sales" | "activity";
 export type Filter = "all" | "opportunities" | "review" | "excluded";
 export type SpecKey =
+  | "brand"
+  | "gpu"
+  | "bundle"
+  | "lens"
+  | "edition"
+  | "vram_gb"
+  | "lock_status"
   | "model"
   | "generation"
   | "variant"
@@ -11,6 +18,8 @@ export type SpecKey =
 export type Facts = Partial<Record<SpecKey, string | number | null>>;
 export interface Extraction {
   classification: string;
+  category: Category;
+  legacy?: boolean;
   status: "eligible" | "rejected" | "needs_review";
   facts: Facts;
   evidence: Partial<Record<SpecKey, string>>;
@@ -37,14 +46,27 @@ export interface Settings {
   assumed_resale: number | null;
   recency_days: number;
 }
+export type Category =
+  "laptop" | "camera" | "phone" | "tablet" | "console" | "gpu" | "other";
+export interface Watchlist extends Settings {
+  id: number;
+  name: string;
+  category: Category;
+  enabled: boolean;
+  archived: boolean;
+}
 export interface Comparison {
+  category?: Category;
+  brand?: string;
+  bundle?: string;
+  lens?: string;
   external_id: string;
   source: string;
   reference: string;
   sold_at: string;
   collected_at: string;
   model: string;
-  generation: number;
+  generation: string | number | null;
   variant: string;
   cpu: string;
   ram_gb: number;
@@ -76,6 +98,7 @@ export interface Valuation {
   reason: string;
   costs: Settings;
   valued_at: string;
+  watchlist_id?: number | null;
   range?: Record<string, number>;
 }
 export interface Listing {
@@ -91,6 +114,11 @@ export interface Listing {
   location_basis?: string;
   extraction: Extraction;
   valuation: Valuation;
+  valuations: Record<string, Valuation>;
+  watchlist_ids: number[];
+  display_watchlist_id: number | null;
+  watchlist_names?: string[];
+  valuation_source?: string;
   decision: string;
   first_seen: string;
   last_seen: string;
@@ -103,6 +131,16 @@ export interface Listing {
 }
 export interface Job {
   kind: string;
+  phase?: string;
+  searches?: {
+    watchlist_id: number;
+    name: string;
+    query: string;
+    status: string;
+    requests: number;
+    admitted: number;
+    error?: string;
+  }[];
   status: "running" | "completed" | "partial" | "failed";
   started_at: string;
   finished_at?: string;
@@ -115,7 +153,8 @@ export interface Job {
   elapsed_seconds?: number;
 }
 export interface Workspace {
-  mode: "local" | "demo";
+  mode: "local";
+  watchlists: Watchlist[];
   settings: Settings;
   listings: Listing[];
   comparisons: Comparison[];

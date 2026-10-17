@@ -10,9 +10,9 @@ const reads = new Set([
   "templates/comparisons",
 ]);
 const writes = new Set([
-  "demo",
-  "mode",
   "settings",
+  "watchlists/save",
+  "watchlists/archive",
   "import/listings",
   "import/comparisons",
   "scan",

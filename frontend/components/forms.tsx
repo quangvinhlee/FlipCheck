@@ -8,7 +8,14 @@ import {
   ShieldCheck,
   UploadCloud,
 } from "lucide-react";
-import type { Listing, Mutation, Settings, Workspace } from "@/lib/types";
+import type {
+  Listing,
+  Mutation,
+  Settings,
+  Workspace,
+  Watchlist,
+  Category,
+} from "@/lib/types";
 import { parseImport } from "@/lib/import";
 import { download } from "@/lib/format";
 
@@ -69,7 +76,9 @@ export function SettingsForm({
   mutate,
   pending,
   onClose,
+  watchlist,
 }: {
+  watchlist?: Watchlist;
   settings: Settings;
   mutate: Mutation;
   pending: boolean;
@@ -82,13 +91,22 @@ export function SettingsForm({
     const values = Object.fromEntries(
       Object.entries(form).map(([k, v]) => [
         k,
-        ["query", "fee_base"].includes(k) ? v : v === "" ? null : Number(v),
+        ["query", "fee_base", "name", "category"].includes(k)
+          ? v
+          : v === ""
+            ? null
+            : Number(v),
       ]),
     );
     try {
       await mutate(
-        "settings",
-        values,
+        "watchlists/save",
+        {
+          ...values,
+          id: watchlist?.id,
+          enabled: form.enabled === "on",
+          name: String(form.name || form.query),
+        },
         "Your settings are saved. Margins have been recalculated.",
       );
       onClose();
@@ -107,6 +125,38 @@ export function SettingsForm({
           01 <span>Your watchlist</span>
         </h3>
         <div className="form-grid">
+          <Field
+            label="Display name (optional)"
+            name="name"
+            value={watchlist?.name || ""}
+            type="text"
+            optional
+            wide
+          />
+          <label className="field wide">
+            <span>Product category</span>
+            <select
+              aria-label="Product category"
+              name="category"
+              defaultValue={watchlist?.category || "other"}
+            >
+              {[
+                "laptop",
+                "camera",
+                "phone",
+                "tablet",
+                "console",
+                "gpu",
+                "other",
+              ].map((c) => (
+                <option key={c} value={c}>
+                  {c === "other"
+                    ? "Other tech"
+                    : c[0].toUpperCase() + c.slice(1)}
+                </option>
+              ))}
+            </select>
+          </label>
           <Field
             label="Search query"
             name="query"
@@ -140,7 +190,7 @@ export function SettingsForm({
           </label>
           <Field label="Packaging (AUD)" name="packaging" value={s.packaging} />
           <Field
-            label="Repairs per laptop (AUD)"
+            label="Repairs per product (AUD)"
             name="repairs"
             value={s.repairs}
           />
@@ -179,10 +229,34 @@ export function SettingsForm({
             help="Optional fallback for insufficient sales data. It never earns an evidence-backed opportunity badge."
           />
         </div>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            name="enabled"
+            defaultChecked={watchlist?.enabled ?? true}
+          />
+          Include in Scan all
+        </label>
         <FormError error={error} />
-        <FormFooter note="Saved on this machine. All amounts in AUD.">
+        {watchlist && (
+          <button
+            type="button"
+            className="text-button archive-search"
+            onClick={async () => {
+              try {
+                await mutate("watchlists/archive", { id: watchlist.id });
+                onClose();
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            Archive search
+          </button>
+        )}
+        <FormFooter note="Each search has its own costs and budget. AUD.">
           <button className="button primary" type="submit">
-            {pending ? "Saving…" : "Save & recalculate"}
+            {pending ? "Saving…" : "Save search"}
             <Check size={16} />
           </button>
         </FormFooter>
@@ -196,7 +270,11 @@ export function ImportForm({
   mutate,
   pending,
   onComplete,
+  watchlists,
+  selectedWatchlist,
 }: {
+  watchlists: Watchlist[];
+  selectedWatchlist?: number;
   initialKind?: "listings" | "comparisons";
   mutate: Mutation;
   pending: boolean;
@@ -205,6 +283,9 @@ export function ImportForm({
   const [kind, setKind] = useState(initialKind),
     [text, setText] = useState(""),
     [error, setError] = useState("");
+  const [searchId, setSearchId] = useState(
+    String(selectedWatchlist || watchlists.find((w) => w.enabled)?.id || ""),
+  );
   let preview = "Choose a file or paste data below.";
   if (text.trim()) {
     try {
@@ -218,7 +299,10 @@ export function ImportForm({
     setError("");
     try {
       const rows = parseImport(text, kind);
-      await mutate(`import/${kind}`, { [kind]: rows });
+      await mutate(`import/${kind}`, {
+        [kind]: rows,
+        ...(kind === "listings" ? { watchlist_ids: [Number(searchId)] } : {}),
+      });
       onComplete(kind);
     } catch (e) {
       setError((e as Error).message);
@@ -265,6 +349,28 @@ export function ImportForm({
             Sold comparisons
           </button>
         </div>
+        {kind === "listings" && (
+          <label className="field import-search">
+            <span>Associate listings with search</span>
+            <select
+              aria-label="Associate listings with search"
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+              required
+            >
+              <option value="" disabled>
+                Choose an enabled search
+              </option>
+              {watchlists
+                .filter((w) => w.enabled)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
         <label className="upload-zone">
           <span className="upload-icon">
             <UploadCloud size={25} />
@@ -351,28 +457,46 @@ export function CorrectionForm({
   pending: boolean;
   onComplete: () => void;
 }) {
-  const f = item.extraction.facts;
   const [error, setError] = useState("");
+  const [category, setCategory] = useState<Category>(
+    item.extraction.category || "other",
+  );
+  const f = item.extraction.facts;
+  const profile: Record<Category, string[]> = {
+    laptop: ["generation", "variant", "cpu", "ram_gb", "storage_gb", "gpu"],
+    camera: ["bundle", "lens"],
+    phone: ["storage_gb", "lock_status"],
+    tablet: ["storage_gb", "lock_status"],
+    console: ["edition", "bundle", "storage_gb"],
+    gpu: ["vram_gb", "variant"],
+    other: ["variant"],
+  };
+  const fields = ["brand", "model", "condition", ...profile[category]];
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = Object.fromEntries(new FormData(e.currentTarget));
-    const facts = {
-      model: "ThinkPad T14",
-      generation: Number(form.generation),
-      variant: form.variant,
-      cpu: form.cpu,
-      ram_gb: Number(form.ram_gb),
-      storage_gb: Number(form.storage_gb),
-      condition: form.condition,
-    };
-    const note = `User confirmed: ThinkPad T14; Gen ${facts.generation}; ${facts.variant}; ${facts.cpu}; ${facts.ram_gb}GB RAM; ${facts.storage_gb}GB SSD; ${facts.condition} condition. ${form.note}`;
+    const values = Object.fromEntries(
+      fields.map((key) => [
+        key,
+        form[key] === ""
+          ? null
+          : ["ram_gb", "storage_gb", "vram_gb"].includes(key)
+            ? Number(form[key])
+            : String(form[key]),
+      ]),
+    );
+    const parts = Object.entries(values)
+      .filter(([, v]) => v !== null)
+      .map(([k, v]) => `${k}: ${v}`);
+    const note = `User confirmed: ${parts.join("; ")}. ${form.note}`;
     const extraction = {
-      classification: "complete_laptop",
+      category,
+      classification: form.classification,
       reason: "Human confirmed details; see correction note.",
       ...Object.fromEntries(
-        Object.entries(facts).map(([key, value]) => [
+        Object.entries(values).map(([key, value]) => [
           key,
-          { value, evidence: note },
+          { value, evidence: value === null ? null : note },
         ]),
       ),
     };
@@ -392,53 +516,87 @@ export function CorrectionForm({
   return (
     <form onSubmit={submit}>
       <p className="form-intro">
-        Record details you checked with the seller or original listing. Your
-        confirmation is labelled as human evidence; original faults and
-        conflicting specifications still require review.
+        Record only details you verified. Blank fields stay unknown and can
+        prevent a resale estimate. Original faults still require review.
       </p>
       <fieldset disabled={pending}>
         <div className="form-grid">
-          <Field
-            label="Generation (1–3)"
-            name="generation"
-            value={f.generation}
-            step="1"
-          />
           <label className="field">
-            <span>Processor platform</span>
-            <select name="variant" defaultValue={f.variant ?? ""} required>
-              <option value="" disabled>
-                Select platform
-              </option>
-              <option>Intel</option>
-              <option>AMD</option>
+            <span>Product category</span>
+            <select
+              aria-label="Product category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as Category)}
+            >
+              {Object.keys(profile).map((c) => (
+                <option key={c}>{c}</option>
+              ))}
             </select>
           </label>
-          <Field
-            label="Exact CPU identifier"
-            name="cpu"
-            value={f.cpu}
-            type="text"
-            wide
-          />
-          <Field label="Memory (GB)" name="ram_gb" value={f.ram_gb} step="1" />
-          <Field
-            label="SSD (GB)"
-            name="storage_gb"
-            value={f.storage_gb}
-            step="1"
-          />
           <label className="field">
-            <span>Seller-stated condition</span>
-            <select name="condition" defaultValue={f.condition ?? ""} required>
-              <option value="" disabled>
-                Select condition
-              </option>
-              <option value="good">Good</option>
-              <option value="fair">Fair</option>
-              <option value="excellent">Excellent</option>
+            <span>Classification</span>
+            <select
+              name="classification"
+              defaultValue={
+                item.extraction.classification === "complete_product"
+                  ? "complete_product"
+                  : "uncertain"
+              }
+            >
+              {[
+                "complete_product",
+                "accessory",
+                "parts_or_faulty",
+                "unrelated",
+                "uncertain",
+              ].map((c) => (
+                <option key={c}>{c}</option>
+              ))}
             </select>
           </label>
+          {fields.map((key) =>
+            key === "condition" ? (
+              <label className="field" key={key}>
+                <span>Condition</span>
+                <select name={key} defaultValue={f.condition ?? ""}>
+                  <option value="">Unknown</option>
+                  <option>good</option>
+                  <option>fair</option>
+                  <option>excellent</option>
+                </select>
+              </label>
+            ) : key === "bundle" ? (
+              <label className="field" key={key}>
+                <span>Bundle configuration</span>
+                <select name={key} defaultValue={f.bundle ?? ""}>
+                  <option value="">Unknown</option>
+                  {[
+                    "body_only",
+                    "kit",
+                    "console_only",
+                    "standard",
+                    "bundle",
+                  ].map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <Field
+                key={key}
+                label={key.replaceAll("_", " ")}
+                name={key}
+                value={f[key as keyof typeof f]}
+                type={
+                  ["ram_gb", "storage_gb", "vram_gb"].includes(key)
+                    ? "number"
+                    : "text"
+                }
+                optional
+                step="1"
+              />
+            ),
+          )}
           <Field
             label="Inbound shipping (AUD)"
             name="inbound_shipping"
@@ -451,14 +609,13 @@ export function CorrectionForm({
               name="note"
               required
               minLength={5}
-              maxLength={1500}
+              maxLength={1200}
               rows={3}
-              placeholder="e.g. Seller confirmed the CPU and postage in a message."
             />
           </label>
         </div>
         <FormError error={error} />
-        <FormFooter note="Only confirm details you checked.">
+        <FormFooter note="Human-confirmed evidence, saved locally.">
           <button className="button primary" type="submit">
             {pending ? "Saving…" : "Save correction"}
             <Check size={16} />
@@ -480,11 +637,11 @@ export function Help({ data }: { data: Workspace | null }) {
           profit.
         </p>
       </div>
-      <h3>Local AI, focused on one niche</h3>
+      <h3>Local AI, across your product searches</h3>
       <p>
-        Gemma 4 reads listing text for ThinkPad T14 Gen 1–3 laptops. It copies
-        supporting excerpts and leaves unsupported facts unknown. Model output
-        never certifies physical condition.
+        Gemma 4 reads text for laptops, cameras, phones, tablets, consoles and
+        GPUs. It copies supporting excerpts and leaves unsupported facts
+        unknown. Model output never certifies physical condition.
       </p>
       <h3>Comparable sales, explicit costs</h3>
       <p>
@@ -505,11 +662,11 @@ export function Help({ data }: { data: Workspace | null }) {
         default. Live discovery sends your search query to SerpApi and needs
         internet. No cloud inference fallback or telemetry is included.
       </p>
-      <h3>A demo is a demo</h3>
+      <h3>Multiple searches, real results</h3>
       <p>
-        Synthetic listings and sales are isolated from your real workspace.
-        Replay is not a live model call. Use “Analyse again” in the evidence
-        panel to run the local model.
+        Add up to ten product searches, each with its own budget and costs. Scan
+        all enabled searches together. No listings or sold prices are preloaded;
+        provider failures never substitute fabricated results.
       </p>
       <div className="connection-summary">
         <span>

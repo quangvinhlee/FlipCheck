@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import {
   ArrowUpRight,
   Bookmark,
@@ -11,9 +12,10 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import type { Listing, Mutation, SpecKey } from "@/lib/types";
+import type { Listing, Mutation, SpecKey, Watchlist } from "@/lib/types";
 import { assessment, aud, margin, scenario, specLine } from "@/lib/format";
 import LaptopArt from "./laptop-art";
+import { CategoryIcon } from "./watchlists";
 
 export function Badge({ item }: { item: Listing }) {
   const a = assessment(item);
@@ -30,27 +32,40 @@ export default function Evidence({
   pending,
   onCorrect,
   onClose,
+  watchlists,
 }: {
+  watchlists: Watchlist[];
   item: Listing;
   mutate: Mutation;
   pending: boolean;
   onCorrect: () => void;
   onClose: () => void;
 }) {
-  const x = item,
+  const [searchId, setSearchId] = useState(
+    String(item.display_watchlist_id || ""),
+  );
+  const x = { ...item, valuation: item.valuations[searchId] || item.valuation },
     f = x.extraction.facts,
     v = x.valuation,
     s = scenario(x);
+  const matches = watchlists.filter((w) => item.watchlist_ids.includes(w.id));
   const title = f.model
     ? `${f.model}${f.generation ? ` · Gen ${f.generation}` : ""}`
     : x.title;
   const keys: [SpecKey, string][] = [
+    ["brand", "Brand"],
     ["model", "Model"],
     ["generation", "Generation"],
     ["variant", "Platform"],
     ["cpu", "Processor"],
     ["ram_gb", "Memory (GB)"],
     ["storage_gb", "SSD (GB)"],
+    ["gpu", "Graphics"],
+    ["bundle", "Bundle"],
+    ["lens", "Lens"],
+    ["edition", "Edition"],
+    ["vram_gb", "VRAM (GB)"],
+    ["lock_status", "Lock/network"],
     ["condition", "Condition"],
   ];
   const costs: [string, number | null | undefined][] = [
@@ -67,33 +82,44 @@ export default function Evidence({
   return (
     <>
       <div className="detail-product">
-        <LaptopArt
-          variant={
-            x.extraction.classification === "accessory"
-              ? "accessory"
-              : x.extraction.classification === "parts_or_faulty"
-                ? "faulty"
-                : "normal"
-          }
-          large
-        />
+        {x.extraction.category === "laptop" ? (
+          <LaptopArt
+            variant={
+              x.extraction.classification === "accessory"
+                ? "accessory"
+                : x.extraction.classification === "parts_or_faulty"
+                  ? "faulty"
+                  : "normal"
+            }
+            large
+          />
+        ) : (
+          <div className="laptop-art large category-art" aria-hidden="true">
+            <CategoryIcon category={x.extraction.category} size={58} />
+          </div>
+        )}
         <div>
-          <span className="eyebrow">
-            {x.synthetic ? "SYNTHETIC EXAMPLE" : "EBAY AUSTRALIA"}
-          </span>
+          <span className="eyebrow">EBAY AUSTRALIA</span>
           <h3>{title}</h3>
           <p>{specLine(x)}</p>
           <Badge item={x} />
         </div>
       </div>
-      {x.synthetic && (
-        <div className="inline-notice amber">
-          <CircleHelp size={17} />
-          <span>
-            Demo listing and simulated sales. No actual transaction or
-            profitable deal is claimed.
-          </span>
-        </div>
+      {matches.length > 0 && (
+        <label className="field valuation-search">
+          <span>Valuation and costs for search</span>
+          <select
+            aria-label="Valuation and costs for search"
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+          >
+            {matches.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
       <div className="detail-actions">
         {x.url && (
@@ -186,17 +212,27 @@ export default function Evidence({
           <span>{x.extraction.engine || "Not analysed"}</span>
         </h3>
         <div className="facts-table">
-          {keys.map(([key, label]) => (
-            <div className="fact-row" key={key}>
-              <span>{label}</span>
-              <strong>{f[key] ?? "Unknown"}</strong>
-              {x.extraction.evidence[key] ? (
-                <q>{x.extraction.evidence[key]}</q>
-              ) : (
-                <span className="missing-fact">No supporting text</span>
-              )}
-            </div>
-          ))}
+          {keys
+            .filter(
+              ([key]) =>
+                ["brand", "model", "condition"].includes(key) ||
+                f[key] != null ||
+                (x.extraction.category === "laptop" &&
+                  ["cpu", "ram_gb", "storage_gb"].includes(key)) ||
+                (x.extraction.category === "camera" &&
+                  ["bundle", "lens"].includes(key)),
+            )
+            .map(([key, label]) => (
+              <div className="fact-row" key={key}>
+                <span>{label}</span>
+                <strong>{f[key] ?? "Unknown"}</strong>
+                {x.extraction.evidence[key] ? (
+                  <q>{x.extraction.evidence[key]}</q>
+                ) : (
+                  <span className="missing-fact">No supporting text</span>
+                )}
+              </div>
+            ))}
         </div>
         <p className="detail-reason">{x.extraction.reason}</p>
         {!!x.extraction.errors?.length && (
@@ -288,9 +324,7 @@ export default function Evidence({
         )}
         <p className="micro-copy">
           Quartiles describe this sample, not a calibrated prediction interval.{" "}
-          {x.synthetic
-            ? "Synthetic comparisons cannot affect real listings."
-            : "Sales verification is asserted by the importer."}
+          Sales verification is asserted by the importer.
         </p>
       </section>
       <section className="detail-section">

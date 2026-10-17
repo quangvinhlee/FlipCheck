@@ -1,6 +1,6 @@
 """Hand-authored synthetic fixtures. Replay is labelled and never called model inference."""
 from datetime import date, timedelta
-from .domain import local_date, normalize_listing, normalize_comparison, validate_extraction
+from flipcheck.domain import local_date, normalize_listing, normalize_comparison, validate_extraction
 
 
 def demo_data():
