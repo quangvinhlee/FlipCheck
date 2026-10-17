@@ -111,6 +111,13 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(checked["status"],"needs_review")
         self.assertIsNone(checked["facts"]["ram_gb"])
 
+    def test_full_sentence_numeric_evidence_keeps_word_boundaries(self):
+        text=raw_listing()['title']
+        values=draft()
+        for field in ('generation','ram_gb','storage_gb'):
+            values[field]['evidence']=text
+        self.assertEqual(validate_extraction(values,text)['status'],'eligible')
+
     def test_melbourne_sale_date_across_utc_midnight(self):
         from unittest.mock import patch
         from datetime import datetime, timezone

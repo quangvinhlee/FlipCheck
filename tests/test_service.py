@@ -87,6 +87,20 @@ class ServiceTests(unittest.TestCase):
             error.exception.close()
         finally:
             server.shutdown();server.server_close();thread.join()
+
+    def test_backend_home_redirects_to_next_dashboard(self):
+        from http.client import HTTPConnection
+        server=create_server(self.app,0)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        connection=HTTPConnection('127.0.0.1',server.server_port)
+        try:
+            connection.request('GET','/')
+            response=connection.getresponse()
+            self.assertEqual(response.status,307)
+            self.assertEqual(response.getheader('Location'),'http://127.0.0.1:3030')
+            response.read()
+        finally:
+            connection.close();server.shutdown();server.server_close();thread.join()
     def test_provider_normalization(self):
         row={"title":raw_listing()["title"],"product_id":"123456789012","link":"https://www.ebay.com.au/itm/123456789012", "price":{"raw":"AU $240.00","extracted":240},"shipping":"Free postage","location":"Located in Australia","buying_format":"buy_it_now"}
         accepted,skipped=parse_serpapi({"organic_results":[row,row|{"price":{"from":{"extracted":10},"to":{"extracted":50}}},row|{"location":"Located in United States"}]})

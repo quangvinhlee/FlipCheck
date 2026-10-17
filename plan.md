@@ -2,7 +2,7 @@
 
 **Hacktoberfest 2026 Open-Source AI Challenge — Week 2: Side Hustle**
 
-Status: the local MVP is implemented with Gemma 4, SerpApi, SQLite, and a responsive dashboard. Run `python3 -m flipcheck`; see README.md and docs/validation.md for setup and measured results. Real sold-price accuracy, customer willingness to pay, and realized profit remain unvalidated. Targets and business hypotheses below are not achieved-result claims.
+Status: the local MVP is implemented with Gemma 4, SerpApi, SQLite, and a redesigned Next.js/TypeScript dashboard. Run `npm ci` then `npm run dev` for the Next.js dashboard and local API; see README.md and docs/validation.md for setup and measured results. Real sold-price accuracy, customer willingness to pay, and realized profit remain unvalidated. Targets and business hypotheses below are not achieved-result claims.
 
 ## 1. Product and challenge fit
 

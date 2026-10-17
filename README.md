@@ -8,13 +8,14 @@ A local, Gemma 4-powered deal scout for Australian used-laptop resellers. FlipCh
 
 ## Run locally
 
-Python **3.11+**. No Python packages, Node build, cloud inference account, or database service required.
+Node.js **20.9+** (24 recommended) and Python **3.11+**. The Next.js frontend lives in `frontend/`; the local Python/SQLite analysis API lives in `flipcheck/`. No extra Python packages or database service are required.
 
 ```sh
-python3 -m flipcheck
+npm ci
+npm run dev
 ```
 
-Open **http://127.0.0.1:8765**. Select **Explore synthetic demo** for an offline walkthrough with eight hand-authored listings and fourteen simulated sold comparisons. Demo replay does not call Gemma or SerpApi, and is visibly separated from your real workspace.
+Open **http://127.0.0.1:3030**. The root command starts Next.js and the Python service together, or reuses an existing healthy local API on port 8765. The backend homepage redirects to the Next.js dashboard. Select **Explore synthetic demo** for an offline walkthrough with eight hand-authored listings and fourteen simulated sold comparisons. Demo replay does not call Gemma or SerpApi, and is visibly separated from your real workspace.
 
 For live local analysis, install [Ollama](https://ollama.com/) and the model:
 
@@ -52,7 +53,8 @@ The adapter requests eBay Australia, fixed-price results, and the domestic filte
 - An explicit resale assumption fallback when verified comparisons are unavailable; assumptions cannot earn an evidence-backed opportunity badge.
 - Editable watchlist, fees, shipping, repairs, packaging, risk, and labour assumptions.
 - Saved/dismissed decisions, human corrections, price observations, scan history, and JSON export.
-- Separate synthetic/real workspaces, responsive dashboard, keyboard-accessible dialogs, and local SQLite persistence.
+- A redesigned Next.js/TypeScript dashboard with table and card views, local fonts, mobile navigation, accessible dialogs, and separate synthetic/real workspaces.
+- Local SQLite persistence, with Python handling analysis and Next.js proxying only the approved loopback API endpoints.
 
 ## Evidence before estimates
 
@@ -68,13 +70,14 @@ Default costs are **illustrative**, not current eBay rates. Estimates are in AUD
 
 ```sh
 python3 -m unittest discover -s tests -v
-node --check flipcheck/static/app.js  # optional JS syntax check
+npm run typecheck                     # Next.js route types + TypeScript
+npm run build                         # production build
 python3 scripts/evaluate.py           # real local inference on 40 synthetic holdout cases
 ```
 
 The evaluation fixture has 50 hand-authored synthetic examples: 10 development and 40 holdout. It is not marketplace evidence. The recorded run classified 37/40 correctly versus 40/40 for a simple keyword baseline; 16/16 automatically admitted examples were complete laptops. This does not prove real-world accuracy or superiority. See [validation results and limitations](docs/validation.md).
 
-An optional browser smoke script is in [scripts/browser-smoke.cjs](scripts/browser-smoke.cjs). Browser-test dependencies are for development only; the app itself has no runtime dependencies beyond Python and optional Ollama.
+The browser regression script is in [scripts/browser-smoke.cjs](scripts/browser-smoke.cjs). Playwright and axe are development dependencies; see [validation](docs/validation.md) for disposable-data test setup. Local fonts are bundled with the frontend, so the UI makes no font/CDN requests.
 
 ## Storage and architecture
 
@@ -84,11 +87,27 @@ eBay / local import → normalize → local Gemma 4 → validate evidence
    → local SQLite → shortlist, corrections, and audit history
 ```
 
-Local data lives in `.data/flipcheck.sqlite3`. Back up that directory while the app is stopped. The HTTP server binds only to `127.0.0.1` and uses Host/origin checks and per-session tokens for mutations. It is a single-user local application, not a production public web service. No telemetry or cloud fallback is included. Pointing `OLLAMA_URL` at a remote server changes the privacy boundary.
+Local data lives in `.data/flipcheck.sqlite3`. Back up that directory while the app is stopped. Both servers bind only to `127.0.0.1`. Next.js checks request origin and proxies a fixed list of loopback endpoints; the Python API retains Host/origin checks and per-session tokens for mutations. It is a single-user local application, not a production public web service. No telemetry or cloud fallback is included. Pointing `OLLAMA_URL` at a remote server changes the privacy boundary.
 
 ```sh
-python3 -m flipcheck --port 8766 --data-dir /path/to/private/data
+# Optional production mode; still local, with the same Python service.
+npm run build
+npm start
+
+# Optional custom ports and data location.
+FLIPCHECK_BACKEND_PORT=8766 FLIPCHECK_WEB_PORT=3031 FLIPCHECK_DATA_DIR=/path/to/private/data npm run dev
 ```
+
+Run `python3 -m flipcheck` separately only if you want to manage the API yourself. The root launcher does not stop a pre-existing API when it exits. Stop both owned processes with Ctrl+C. Root `.env` stores backend credentials; never add private keys to `NEXT_PUBLIC_*` variables.
+
+Frontend source map:
+
+- `frontend/app/page.tsx` and `layout.tsx`: Next.js entry and local fonts.
+- `frontend/components/dashboard.tsx`: navigation, filters, cards, and tables.
+- `frontend/components/evidence.tsx` and `forms.tsx`: evidence, settings, imports, corrections.
+- `frontend/app/globals.css`: responsive design and shared styles.
+- `frontend/app/api/[...path]/route.ts`: the server-side API bridge.
+- `frontend/lib/`: typed state, cancellable polling, formatting, and import parsing.
 
 For tests and screenshots, use a temporary data directory rather than importing fictional data into your real workspace.
 

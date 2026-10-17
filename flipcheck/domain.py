@@ -155,7 +155,9 @@ def validate_extraction(draft, text):
         if field in {"generation", "ram_gb", "storage_gb"}:
             valid = type(value) is int and value in ({1, 2, 3} if field == "generation" else ({4, 8, 16, 24, 32, 40, 48, 64} if field == "ram_gb" else {128, 256, 512, 1024, 2048}))
             units = [str(value)] if field != "storage_gb" or value not in {1024, 2048} else [str(value), str(value // 1024) + "tb"]
-            valid = valid and any(re.search(r"(?<!\d)" + re.escape(u) + r"(?!\d)", canonical(quote)) for u in units)
+            # Keep word separators: collapsing a quote can join the CPU's trailing
+            # digit to the following RAM amount ("1135G7 16GB" -> "1135g716gb").
+            valid = valid and any(re.search(r"(?<!\d)" + re.escape(u).replace("tb", r"\s*tb") + r"(?!\d)", quote.lower()) for u in units)
         elif field == "model":
             valid = value == "ThinkPad T14" and "t14" in canonical(quote) and not re.search(r"t14s|t14p", canonical(quote))
         elif field == "variant":

@@ -2,9 +2,9 @@
 
 ## Automated checks
 
-23 standard-library unit/integration tests pass, covering monetary arithmetic and fees, unknown shipping, currency/market scope, extraction evidence and faults, negated condition, CPU conflicts, deduplication, comparison thresholds, chronological data boundaries, synthetic separation, source-change invalidation, price history, human corrections, provider failures, HTTP origin/token protection, and Melbourne dates across UTC midnight.
+25 standard-library unit/integration tests pass, covering monetary arithmetic and fees, unknown shipping, currency/market scope, extraction evidence and faults, negated condition, CPU conflicts, deduplication, comparison thresholds, chronological data boundaries, synthetic separation, source-change invalidation, price history, human corrections, provider failures, HTTP origin/token protection, and Melbourne dates across UTC midnight.
 
-The browser workflow was exercised in Chromium at 1512px and 390px widths: demo, filters, saved listings, settings/recalculation, sales library, evidence drawer, correction form, and invalid import feedback. JavaScript syntax checks pass. Automated WCAG A/AA checks on the dashboard, evidence drawer, and correction form pass after contrast fixes. This is not a complete accessibility audit.
+The browser workflow was exercised in Chromium at 1512px and 390px widths: demo, filters, saved listings, settings/recalculation, sales library, evidence drawer, correction form, and invalid import feedback. The Next.js production build and TypeScript checks pass. Automated WCAG A/AA checks cover the Next.js dashboard, card layout, evidence drawer, settings, import and correction forms, sales library, and mobile views after contrast fixes. This is not a complete accessibility audit.
 
 Reproduce Python checks:
 
@@ -12,19 +12,28 @@ Reproduce Python checks:
 python3 -m unittest discover -s tests -v
 ```
 
-Optional browser QA (separate shells; use disposable data):
+Next.js browser QA (separate shells; use disposable data):
 
 ```sh
-python3 -m flipcheck --port 8766 --data-dir /tmp/flipcheck-browser-data
+npm ci
+FLIPCHECK_BACKEND_PORT=8766 FLIPCHECK_DATA_DIR=/tmp/flipcheck-browser-data npm run dev
 ```
 
 ```sh
-npm install --prefix /tmp/flipcheck-browser-deps playwright @axe-core/playwright
-/tmp/flipcheck-browser-deps/node_modules/.bin/playwright install chromium
-NODE_PATH=/tmp/flipcheck-browser-deps/node_modules FLIPCHECK_URL=http://127.0.0.1:8766 node scripts/browser-smoke.cjs
+npx playwright install chromium
+npm run test:browser
 ```
 
-Set `CHROMIUM_PATH` to reuse an installed compatible Chromium executable if needed. These packages are development tools, not application dependencies.
+The script defaults to `http://127.0.0.1:3030`; override `FLIPCHECK_URL` if needed. Set `CHROMIUM_PATH` to reuse an installed compatible Chromium executable. Optional `FLIPCHECK_TEST_INFERENCE=1 npm run test:browser` also imports one synthetic QA listing through Next.js and executes actual Gemma 4 inference in the disposable database.
+
+The regression suite exercises table/card layout, search, filters, saved listings, real mutation round trips for corrections and settings, invalid-import feedback, sales, mobile navigation, accessibility, API-origin/token/upload protection, and unavailable-backend recovery. These checks do not require another paid search request. The optional local-inference import was also verified through the Next.js proxy.
+
+```sh
+npm run typecheck
+npm run build
+```
+
+The Python root now redirects to the Next.js dashboard rather than serving a second static frontend. Backend pricing, imports, credentials, and existing SQLite data remain local. A regression test covers the redirect; another covers numeric evidence spanning CPU and RAM identifiers in a full sentence.
 
 ## Actual local model measurement
 

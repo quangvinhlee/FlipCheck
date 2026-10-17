@@ -487,6 +487,7 @@ export default function Dashboard() {
                   <div className="feed-heading-actions">
                     <button
                       className="text-button subdued"
+                      aria-label="Export workspace"
                       onClick={() => void exportWorkspace()}
                     >
                       <ArrowDownToLine size={15} />
