@@ -11,6 +11,7 @@ import sys
 from urllib.parse import urlparse
 
 from .config import ROOT, load_env
+from .domain import local_date
 from .service import App
 from .store import Store
 
@@ -54,8 +55,7 @@ def create_server(app, port=8765):
             if path == "/api/templates/listings":
                 return self.reply({"listings": [{"external_id": "replace-with-real-id", "title": "Replace with original listing title", "description": "Paste original seller text, not inferred specs", "url": None, "asking_price": 0, "inbound_shipping": None, "currency": "AUD", "country": "AU", "buying_format": "fixed_price"}]})
             if path == "/api/templates/comparisons":
-                from datetime import date
-                return self.reply({"comparisons": [{"external_id": "replace-with-sale-id", "source": "your_sales_export", "reference": "Original transaction reference", "sold_at": date.today().isoformat(), "collected_at": date.today().isoformat(), "verified": True, "actual_price_known": True, "model": "ThinkPad T14", "generation": 2, "variant": "Intel", "cpu": "i5-1135G7", "ram_gb": 16, "storage_gb": 512, "condition": "good", "condition_evidence": "Original condition text", "sold_price": 0, "shipping": 0, "currency": "AUD", "country": "AU"}]})
+                return self.reply({"comparisons": [{"external_id": "replace-with-sale-id", "source": "your_sales_export", "reference": "Original transaction reference", "sold_at": local_date().isoformat(), "collected_at": local_date().isoformat(), "verified": True, "actual_price_known": True, "model": "ThinkPad T14", "generation": 2, "variant": "Intel", "cpu": "i5-1135G7", "ram_gb": 16, "storage_gb": 512, "condition": "good", "condition_evidence": "Original condition text", "sold_price": 0, "shipping": 0, "currency": "AUD", "country": "AU"}]})
             files = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css", "/favicon.svg": "favicon.svg"}
             if path not in files or not (STATIC / files[path]).is_file():
                 return self.reply({"error": "Not found."}, 404)

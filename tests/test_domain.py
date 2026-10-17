@@ -111,5 +111,14 @@ class DomainTests(unittest.TestCase):
         self.assertEqual(checked["status"],"needs_review")
         self.assertIsNone(checked["facts"]["ram_gb"])
 
+    def test_melbourne_sale_date_across_utc_midnight(self):
+        from unittest.mock import patch
+        from datetime import datetime, timezone
+        with patch('flipcheck.domain.datetime') as clock:
+            clock.now.return_value=datetime(2026,10,17,23,0,tzinfo=timezone.utc)
+            self.assertEqual(local_date(),date(2026,10,18))
+            sale=normalize_comparison(comparison(1,sold_at='2026-10-18',collected_at='2026-10-18'))
+            self.assertEqual(sale['sold_at'],'2026-10-18')
+
 if __name__ == "__main__":
     unittest.main()

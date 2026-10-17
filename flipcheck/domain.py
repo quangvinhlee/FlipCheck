@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import re
 from statistics import median
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 VERSION = "extract-v2"
 SPEC_FIELDS = ("model", "generation", "variant", "cpu", "ram_gb", "storage_gb", "condition")
@@ -19,6 +20,10 @@ DEFAULT_SETTINGS = {
 
 def now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def local_date():
+    return datetime.now(timezone.utc).astimezone(ZoneInfo("Australia/Melbourne")).date()
 
 
 def money(value, *, nullable=False):
@@ -220,7 +225,7 @@ def normalize_comparison(raw, *, synthetic=False):
         raise ValueError("Sold comparisons must be domestic AU sales in AUD.")
     sold_at = date.fromisoformat(raw["sold_at"])
     collected = date.fromisoformat(raw["collected_at"])
-    if sold_at > date.today() or collected > date.today() or collected < sold_at:
+    if sold_at > local_date() or collected > local_date() or collected < sold_at:
         raise ValueError("Sale and collection dates must be chronological and not in the future.")
     if raw["model"] != "ThinkPad T14" or type(raw["generation"]) is not int or raw["generation"] not in {1, 2, 3}:
         raise ValueError("Only ThinkPad T14 Gen 1–3 comparisons are supported.")
@@ -242,7 +247,7 @@ def normalize_comparison(raw, *, synthetic=False):
 
 
 def matching_comparisons(listing, extraction, comparisons, settings, *, as_of=None):
-    as_of = as_of or date.today()
+    as_of = as_of or local_date()
     facts = extraction.get("facts", {})
     matched, seen = [], set()
     for comp in comparisons:

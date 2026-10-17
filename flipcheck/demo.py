@@ -1,6 +1,6 @@
 """Hand-authored synthetic fixtures. Replay is labelled and never called model inference."""
 from datetime import date, timedelta
-from .domain import normalize_listing, normalize_comparison, validate_extraction
+from .domain import local_date, normalize_listing, normalize_comparison, validate_extraction
 
 
 def demo_data():
@@ -34,8 +34,8 @@ def demo_data():
     ]:
         for i, price in enumerate(prices):
             raw = {"external_id": f"fixture-gen{gen}-{i}", "source": "synthetic_fixture",
-                   "reference": f"Synthetic example {gen}.{i + 1}; no actual transaction", "sold_at": (date.today()-timedelta(days=7+i*3)).isoformat(),
-                   "collected_at": date.today().isoformat(), "verified": True, "actual_price_known": True,
+                   "reference": f"Synthetic example {gen}.{i + 1}; no actual transaction", "sold_at": (local_date()-timedelta(days=7+i*3)).isoformat(),
+                   "collected_at": local_date().isoformat(), "verified": True, "actual_price_known": True,
                    "model": "ThinkPad T14", "generation": gen, "variant": variant, "cpu": cpu,
                    "ram_gb": ram, "storage_gb": storage, "condition": condition, "condition_evidence": "Good condition (synthetic)",
                    "sold_price": price, "shipping": 15, "currency": "AUD", "country": "AU"}

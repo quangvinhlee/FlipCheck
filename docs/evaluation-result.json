@@ -1,0 +1,407 @@
+{
+  "scope": "Synthetic cases only; not real-world accuracy or resale validation. Holdout labels were frozen before this run.",
+  "split": "holdout",
+  "dataset_sha256": "e0551d88e0eb157f15cdd42b8fb01b59b0a458f854449dd08f21b4bd436dfc68",
+  "model": {
+    "available": true,
+    "model": "gemma4:e2b",
+    "digest": "b37049369adfe3d2b653af0ab301a062ca5cbe96ace6aa0d3f2559ee9b563fc2",
+    "details": {
+      "parent_model": "gemma4-validation-20260929:e2b-imatrix-attention-q6-q8-draft2",
+      "format": "gguf",
+      "family": "gemma4",
+      "families": [
+        "gemma4"
+      ],
+      "parameter_size": "4.6B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 131072,
+      "embedding_length": 1536
+    },
+    "message": "Local model ready"
+  },
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "count": 40,
+  "classification_correct": 37,
+  "baseline_classification_correct": 40,
+  "automatically_eligible": 16,
+  "eligible_true_complete": 16,
+  "eligible_precision": 1.0,
+  "eligible_false_admissions": 0,
+  "mean_seconds": 1.6181,
+  "total_seconds": 64.74,
+  "cases": [
+    {
+      "id": "case-11",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.669,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-12",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.937,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-13",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.693,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-14",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 2.068,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-15",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.877,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-16",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.74,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-17",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.708,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-18",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.919,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-19",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.731,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-20",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.871,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-21",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.829,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-22",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.786,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-23",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.769,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-24",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.882,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-25",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.802,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-26",
+      "expected": "complete_laptop",
+      "predicted": "complete_laptop",
+      "eligible": true,
+      "validation_errors": [],
+      "seconds": 1.827,
+      "baseline": "complete_laptop"
+    },
+    {
+      "id": "case-27",
+      "expected": "accessory",
+      "predicted": "accessory",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.496,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-28",
+      "expected": "accessory",
+      "predicted": "accessory",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.29,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-29",
+      "expected": "accessory",
+      "predicted": "accessory",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.55,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-30",
+      "expected": "accessory",
+      "predicted": "accessory",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.417,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-31",
+      "expected": "accessory",
+      "predicted": "accessory",
+      "eligible": false,
+      "validation_errors": [
+        "model: evidence does not occur in the listing."
+      ],
+      "seconds": 1.403,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-32",
+      "expected": "accessory",
+      "predicted": "accessory",
+      "eligible": false,
+      "validation_errors": [
+        "model: value is unsupported or outside the supported scope."
+      ],
+      "seconds": 1.189,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-33",
+      "expected": "accessory",
+      "predicted": "accessory",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.296,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-34",
+      "expected": "accessory",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.316,
+      "baseline": "accessory"
+    },
+    {
+      "id": "case-35",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.721,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-36",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.551,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-37",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.58,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-38",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.622,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-39",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.713,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-40",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.669,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-41",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.603,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-42",
+      "expected": "parts_or_faulty",
+      "predicted": "parts_or_faulty",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.624,
+      "baseline": "parts_or_faulty"
+    },
+    {
+      "id": "case-43",
+      "expected": "uncertain",
+      "predicted": "uncertain",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.416,
+      "baseline": "uncertain"
+    },
+    {
+      "id": "case-44",
+      "expected": "uncertain",
+      "predicted": "uncertain",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.342,
+      "baseline": "uncertain"
+    },
+    {
+      "id": "case-45",
+      "expected": "uncertain",
+      "predicted": "uncertain",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.417,
+      "baseline": "uncertain"
+    },
+    {
+      "id": "case-46",
+      "expected": "uncertain",
+      "predicted": "uncertain",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.315,
+      "baseline": "uncertain"
+    },
+    {
+      "id": "case-47",
+      "expected": "out_of_scope",
+      "predicted": "out_of_scope",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.628,
+      "baseline": "out_of_scope"
+    },
+    {
+      "id": "case-48",
+      "expected": "out_of_scope",
+      "predicted": "out_of_scope",
+      "eligible": false,
+      "validation_errors": [],
+      "seconds": 1.385,
+      "baseline": "out_of_scope"
+    },
+    {
+      "id": "case-49",
+      "expected": "out_of_scope",
+      "predicted": "complete_laptop",
+      "eligible": false,
+      "validation_errors": [
+        "model: value is unsupported or outside the supported scope.",
+        "generation: value is unsupported or outside the supported scope.",
+        "cpu: value is unsupported or outside the supported scope."
+      ],
+      "seconds": 1.561,
+      "baseline": "out_of_scope"
+    },
+    {
+      "id": "case-50",
+      "expected": "out_of_scope",
+      "predicted": "complete_laptop",
+      "eligible": false,
+      "validation_errors": [
+        "model: value is unsupported or outside the supported scope.",
+        "cpu: value is unsupported or outside the supported scope."
+      ],
+      "seconds": 1.512,
+      "baseline": "out_of_scope"
+    }
+  ]
+}
