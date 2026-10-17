@@ -56,11 +56,11 @@ def create_server(app, port=8765):
                 return self.reply(app.health(refresh=True))
             if path == "/api/export":
                 state = app.state()
-                return self.reply({k: state[k] for k in ("mode", "settings", "listings", "comparisons", "scans")})
+                return self.reply({k: state[k] for k in ("settings", "watchlists", "listings", "comparisons", "scans")})
             if path == "/api/templates/listings":
-                return self.reply({"listings": [{"external_id": "replace-with-real-id", "title": "Replace with original listing title", "description": "Paste original seller text, not inferred specs", "url": None, "asking_price": 0, "inbound_shipping": None, "currency": "AUD", "country": "AU", "buying_format": "fixed_price"}]})
+                return self.reply({"listings": [], "instructions": "Add original seller title/description, stable external_id or ebay.com.au item URL, asking_price, inbound_shipping (null if unknown), currency=AUD, country=AU, buying_format=fixed_price. Choose one search when importing."})
             if path == "/api/templates/comparisons":
-                return self.reply({"comparisons": [{"external_id": "replace-with-sale-id", "source": "your_sales_export", "reference": "Original transaction reference", "sold_at": local_date().isoformat(), "collected_at": local_date().isoformat(), "verified": True, "actual_price_known": True, "model": "ThinkPad T14", "generation": 2, "variant": "Intel", "cpu": "i5-1135G7", "ram_gb": 16, "storage_gb": 512, "condition": "good", "condition_evidence": "Original condition text", "sold_price": 0, "shipping": 0, "currency": "AUD", "country": "AU"}]})
+                return self.reply({"comparisons": [], "instructions": "Supply genuine completed transactions, category, brand, exact model, condition, material profile attributes, source/reference, verified/actual_price_known, sold_at/collected_at, currency=AUD, country=AU, sold_price and shipping. No example sales are preloaded."})
             return self.reply({"error": "Not found."}, 404)
 
         def do_POST(self):
@@ -81,18 +81,18 @@ def create_server(app, port=8765):
                 if not isinstance(data, dict):
                     raise ValueError("Request body must be a JSON object.")
                 path = urlparse(self.path).path
-                if path == "/api/demo":
-                    result = app.load_demo()
-                elif path == "/api/mode":
-                    result = app.set_mode(data.get("mode"))
+                if path == "/api/watchlists/save":
+                    result = app.save_watchlist(data)
+                elif path == "/api/watchlists/archive":
+                    result = app.archive_watchlist(data.get("id"))
                 elif path == "/api/settings":
                     result = app.settings(data)
                 elif path == "/api/import/listings":
-                    result = app.start("import", rows=data.get("listings"))
+                    result = app.start("import", rows=data.get("listings"), watchlist_ids=data.get("watchlist_ids"))
                 elif path == "/api/import/comparisons":
                     result = app.import_comparisons(data.get("comparisons"))
                 elif path == "/api/scan":
-                    result = app.start("live")
+                    result = app.start("live", watchlist_ids=data.get("watchlist_ids"))
                 elif path == "/api/analyse":
                     result = app.start("analyse", listing_id=data.get("id"))
                 elif path == "/api/decision":
