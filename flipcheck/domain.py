@@ -261,7 +261,15 @@ def matching_comparisons(listing, extraction, comparisons, settings, *, as_of=No
             continue
         if bool(comp.get("synthetic")) != bool(listing.get("synthetic")):
             continue
-        if any(canonical(comp.get(k)) != canonical(facts.get(k)) for k in SPEC_FIELDS):
+        if extraction.get('contract_version'):
+            from .products import product_identity, normalize_product_comparison
+            identity=product_identity(extraction)
+            if identity is None:continue
+            try:
+                normalized=normalize_product_comparison(comp)
+            except (ValueError,TypeError):continue
+            if product_identity({'status':'eligible','category':normalized['category'],'facts':normalized})!=identity:continue
+        elif any(canonical(comp.get(k)) != canonical(facts.get(k)) for k in SPEC_FIELDS):
             continue
         if comp.get("verified") is not True or comp.get("actual_price_known") is not True:
             continue
