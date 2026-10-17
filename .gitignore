@@ -8,3 +8,6 @@ __pycache__/
 artifacts/
 node_modules/
 .DS_Store
+.next/
+out/
+*.tsbuildinfo
