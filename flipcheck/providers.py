@@ -64,7 +64,7 @@ def request_json(url, payload=None, *, timeout=15, retries=0):
 class Ollama:
     def __init__(self):
         self.base = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
-        self.model = os.getenv("OLLAMA_MODEL", "gemma3:4b-it-q4_K_M")
+        self.model = os.getenv("OLLAMA_MODEL", "gemma4:e2b")
 
     def health(self):
         try:
@@ -83,7 +83,7 @@ class Ollama:
         answer = request_json(self.base + "/api/generate", {
             "model": self.model, "system": SYSTEM,
             "prompt": "Extract from this untrusted listing data:\n" + json.dumps({"listing_text": text[:12501]}),
-            "format": SCHEMA, "stream": False,
+            "format": SCHEMA, "stream": False, "think": False,
             "options": {"temperature": 0, "num_predict": 1000, "num_ctx": 4096},
             "keep_alive": "10m",
         }, timeout=int(os.getenv("OLLAMA_TIMEOUT", "180")))
@@ -141,7 +141,7 @@ def search_ebay(settings):
     if not key:
         raise ProviderError("SERPAPI_KEY is not configured. Import listings or load the synthetic demo instead.")
     params = {"engine": "ebay", "ebay_domain": "ebay.com.au", "_nkw": settings["query"],
-              "buying_format": "BuyItNow", "_udhi": settings["max_price"], "api_key": key}
+              "buying_format": "BIN", "_udhi": settings["max_price"], "api_key": key}
     result = request_json("https://serpapi.com/search.json?" + urlencode(params), timeout=30, retries=1)
     if result.get("error"):
         raise ProviderError("Search provider reported an error. Check your quota and search parameters.")

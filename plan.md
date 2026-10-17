@@ -63,7 +63,7 @@ Local persistence + reseller decisions and corrections
 
 Use a small Python service, a single-page dashboard, and SQLite for the single-user MVP. PostgreSQL is an optional later deployment choice. Do not add databases or embeddings solely to enter prize categories.
 
-Start by testing `gemma3:4b` on the actual machine. Record model digest, quantization, Ollama version, hardware, and measured throughput; pin the tested environment. This is an initial candidate, not a guaranteed hardware fit.
+Use the locally installed `gemma4:e2b` through Ollama. Record model digest, quantization, Ollama version, hardware, and measured throughput; pin the tested environment. Validate extraction on the actual machine rather than assuming hardware fit or accuracy.
 
 Gemma interprets varied descriptions and separates complete laptops from accessories or faulty units. It does not invent prices, inspect unseen hardware, or certify seller claims. Compare its classification with a keyword baseline to demonstrate the value it adds.
 

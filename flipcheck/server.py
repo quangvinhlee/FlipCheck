@@ -1,0 +1,133 @@
+"""Loopback-only HTTP application, with same-origin mutation protection."""
+import argparse
+import hmac
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import json
+import mimetypes
+import os
+from pathlib import Path
+import secrets
+import sys
+from urllib.parse import urlparse
+
+from .config import ROOT, load_env
+from .service import App
+from .store import Store
+
+STATIC = Path(__file__).parent / "static"
+
+
+def create_server(app, port=8765):
+    token = secrets.token_urlsafe(32)
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, fmt, *args):
+            # Do not log request bodies, query strings, listing content, or secrets.
+            pass
+
+        def reply(self, data, status=200, content_type="application/json; charset=utf-8"):
+            body = json.dumps(data, allow_nan=False).encode() if content_type.startswith("application/json") else data
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def valid_host(self):
+            return self.headers.get("Host") in {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"}
+
+        def do_GET(self):
+            if not self.valid_host():
+                return self.reply({"error": "Invalid local host."}, 403)
+            path = urlparse(self.path).path
+            if path == "/api/state":
+                return self.reply(app.state() | {"csrf_token": token})
+            if path == "/api/health":
+                return self.reply(app.health(refresh=True))
+            if path == "/api/export":
+                state = app.state()
+                return self.reply({k: state[k] for k in ("mode", "settings", "listings", "comparisons", "scans")})
+            if path == "/api/templates/listings":
+                return self.reply({"listings": [{"external_id": "replace-with-real-id", "title": "Replace with original listing title", "description": "Paste original seller text, not inferred specs", "url": None, "asking_price": 0, "inbound_shipping": None, "currency": "AUD", "country": "AU", "buying_format": "fixed_price"}]})
+            if path == "/api/templates/comparisons":
+                from datetime import date
+                return self.reply({"comparisons": [{"external_id": "replace-with-sale-id", "source": "your_sales_export", "reference": "Original transaction reference", "sold_at": date.today().isoformat(), "collected_at": date.today().isoformat(), "verified": True, "actual_price_known": True, "model": "ThinkPad T14", "generation": 2, "variant": "Intel", "cpu": "i5-1135G7", "ram_gb": 16, "storage_gb": 512, "condition": "good", "condition_evidence": "Original condition text", "sold_price": 0, "shipping": 0, "currency": "AUD", "country": "AU"}]})
+            files = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css", "/favicon.svg": "favicon.svg"}
+            if path not in files or not (STATIC / files[path]).is_file():
+                return self.reply({"error": "Not found."}, 404)
+            file = STATIC / files[path]
+            return self.reply(file.read_bytes(), content_type=(mimetypes.guess_type(file)[0] or "application/octet-stream") + ("; charset=utf-8" if file.suffix != ".svg" else ""))
+
+        def do_POST(self):
+            if not self.valid_host():
+                return self.reply({"error": "Invalid local host."}, 403)
+            origin = self.headers.get("Origin")
+            if origin and origin not in {f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"}:
+                return self.reply({"error": "Cross-origin requests are not allowed."}, 403)
+            if not hmac.compare_digest(self.headers.get("X-FlipCheck-Token", ""), token):
+                return self.reply({"error": "Refresh this local page before making changes."}, 403)
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 0 < length <= 2_000_000:
+                    raise ValueError("Upload a JSON document smaller than 2 MB.")
+                if not self.headers.get("Content-Type", "").startswith("application/json"):
+                    raise ValueError("Content-Type must be application/json.")
+                data = json.loads(self.rfile.read(length), parse_constant=lambda v: (_ for _ in ()).throw(ValueError("Non-finite JSON numbers are not supported.")))
+                if not isinstance(data, dict):
+                    raise ValueError("Request body must be a JSON object.")
+                path = urlparse(self.path).path
+                if path == "/api/demo":
+                    result = app.load_demo()
+                elif path == "/api/mode":
+                    result = app.set_mode(data.get("mode"))
+                elif path == "/api/settings":
+                    result = app.settings(data)
+                elif path == "/api/import/listings":
+                    result = app.start("import", rows=data.get("listings"))
+                elif path == "/api/import/comparisons":
+                    result = app.import_comparisons(data.get("comparisons"))
+                elif path == "/api/scan":
+                    result = app.start("live")
+                elif path == "/api/analyse":
+                    result = app.start("analyse", listing_id=data.get("id"))
+                elif path == "/api/decision":
+                    result = app.decision(data.get("id"), data.get("decision"))
+                elif path == "/api/correct":
+                    result = app.correct(data.get("id"), data)
+                else:
+                    return self.reply({"error": "Not found."}, 404)
+                return self.reply(result)
+            except (ValueError, KeyError, TypeError) as exc:
+                return self.reply({"error": str(exc)}, 400)
+            except Exception:
+                return self.reply({"error": "Operation failed. Existing local data is preserved."}, 500)
+
+    return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+
+
+def main():
+    load_env()
+    parser = argparse.ArgumentParser(description="FlipCheck local deal scout")
+    parser.add_argument("--port", type=int, default=int(os.getenv("FLIPCHECK_PORT", "8765")))
+    parser.add_argument("--data-dir", default=os.getenv("FLIPCHECK_DATA_DIR", str(ROOT / ".data")))
+    args = parser.parse_args()
+    data_dir = Path(args.data_dir)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    data_dir.chmod(0o700)
+    app = App(Store(data_dir / "flipcheck.sqlite3"))
+    server = create_server(app, args.port)
+    print(f"FlipCheck → http://127.0.0.1:{server.server_port}", flush=True)
+    print("Local only. No telemetry. Press Ctrl+C to stop.", flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+
+if __name__ == "__main__":
+    main()
