@@ -1,0 +1,9 @@
+[project]
+name = "flipcheck"
+version = "0.1.0"
+description = "Local Gemma-powered used-laptop deal triage"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
