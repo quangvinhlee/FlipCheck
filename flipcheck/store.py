@@ -6,9 +6,15 @@ from pathlib import Path
 import sqlite3
 
 from .domain import DEFAULT_SETTINGS, VERSION, now, source_text
+from .watchlists import validate_watchlist
 
 SCHEMA = """
 PRAGMA journal_mode=WAL;
+CREATE TABLE IF NOT EXISTS watchlists (
+ id INTEGER PRIMARY KEY, data TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS listing_watchlists (
+ listing_id INTEGER NOT NULL REFERENCES listings(id), watchlist_id INTEGER NOT NULL REFERENCES watchlists(id),
+ PRIMARY KEY(listing_id,watchlist_id));
 CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS listings (
  id INTEGER PRIMARY KEY, marketplace TEXT NOT NULL, external_id TEXT NOT NULL,
@@ -37,6 +43,17 @@ class Store:
             db.executescript(SCHEMA)
             db.execute("INSERT OR IGNORE INTO config VALUES ('settings', ?)", (json.dumps(DEFAULT_SETTINGS),))
             db.execute("INSERT OR IGNORE INTO config VALUES ('mode', '\"local\"')")
+            # One transaction; no migration defaults can overwrite later user edits.
+            migrated=db.execute("SELECT value FROM config WHERE key='multi_search_version'").fetchone()
+            if not migrated:
+                settings=json.loads(db.execute("SELECT value FROM config WHERE key='settings'").fetchone()[0])
+                initial=validate_watchlist({'category':'laptop'},settings)
+                cursor=db.execute("INSERT INTO watchlists(data) VALUES (?)",(json.dumps(initial),))
+                db.execute("INSERT OR IGNORE INTO listing_watchlists SELECT id,? FROM listings WHERE marketplace='ebay_au'",(cursor.lastrowid,))
+                db.execute("INSERT INTO config VALUES ('multi_search_version','1')")
+            columns={r[1] for r in db.execute('PRAGMA table_info(valuations)')}
+            if 'watchlist_id' not in columns:
+                db.execute('ALTER TABLE valuations ADD COLUMN watchlist_id INTEGER REFERENCES watchlists(id)')
         self.path.chmod(0o600)
 
     @contextmanager
@@ -137,6 +154,40 @@ class Store:
         with self.connection() as db:
             return [json.loads(r[0]) for r in db.execute("SELECT data FROM scans ORDER BY id DESC LIMIT 20")]
 
-    def snapshot(self, listing_id, valuation):
+    def snapshot(self, listing_id, valuation, watchlist_id=None):
         with self.connection() as db:
-            db.execute("INSERT INTO valuations (listing_id, valued_at, data) VALUES (?,?,?)", (listing_id, valuation["valued_at"], json.dumps(valuation)))
+            db.execute("INSERT INTO valuations (listing_id, valued_at, data,watchlist_id) VALUES (?,?,?,?)", (listing_id, valuation["valued_at"], json.dumps(valuation),watchlist_id))
+
+    def watchlists(self, include_archived=False):
+        with self.connection() as db:
+            rows=db.execute('SELECT * FROM watchlists '+('' if include_archived else 'WHERE archived=0 ')+'ORDER BY id').fetchall()
+            return [json.loads(r['data'])|{'id':r['id'],'archived':bool(r['archived'])} for r in rows]
+
+    def save_watchlist(self, raw, watchlist_id=None):
+        with self.connection() as db:
+            if watchlist_id is not None:
+                if type(watchlist_id) is not int:raise ValueError('Invalid search ID.')
+                row=db.execute('SELECT * FROM watchlists WHERE id=? AND archived=0',(watchlist_id,)).fetchone()
+                if not row:raise ValueError('Search not found.')
+                base=json.loads(row['data'])
+            else:
+                if db.execute('SELECT COUNT(*) FROM watchlists WHERE archived=0').fetchone()[0]>=10:raise ValueError('Save up to ten searches. Archive one first.')
+                base=json.loads(db.execute("SELECT value FROM config WHERE key='settings'").fetchone()[0])
+            value=validate_watchlist(raw,base)
+            if watchlist_id is None:
+                watchlist_id=db.execute('INSERT INTO watchlists(data) VALUES (?)',(json.dumps(value),)).lastrowid
+            else:db.execute('UPDATE watchlists SET data=? WHERE id=?',(json.dumps(value),watchlist_id))
+            return value|{'id':watchlist_id,'archived':False}
+
+    def archive_watchlist(self, watchlist_id):
+        if type(watchlist_id) is not int:raise ValueError('Invalid search ID.')
+        with self.connection() as db:
+            if not db.execute('UPDATE watchlists SET archived=1 WHERE id=? AND archived=0',(watchlist_id,)).rowcount:raise ValueError('Search not found.')
+
+    def link_listing(self, listing_id, watchlist_id):
+        with self.connection() as db:
+            db.execute('INSERT OR IGNORE INTO listing_watchlists VALUES (?,?)',(listing_id,watchlist_id))
+
+    def matches(self, listing_id):
+        with self.connection() as db:
+            return [r[0] for r in db.execute('SELECT watchlist_id FROM listing_watchlists WHERE listing_id=? ORDER BY watchlist_id',(listing_id,))]
