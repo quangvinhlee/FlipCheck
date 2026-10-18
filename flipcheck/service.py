@@ -48,12 +48,14 @@ class App:
                         invalid='Published location is unknown or outside the current pickup radius.'
                 checked=item['extraction'] if invalid is None else item['extraction']|{'status':'needs_review'}
                 valuation=value_listing(cost_item,checked,comparisons,w)|{'watchlist_id':i}
-                if invalid:valuation['reason']=invalid
+                if invalid:
+                    valuation['reason']=invalid
+                    valuation['blockers'].insert(0,{'code':'search','message':invalid})
                 elif source=='facebook' and w['pickup_cost'] is None:
                     valuation['reason']='Pickup/travel allowance is unknown; margin cannot be calculated.'
                 valuations[str(i)]=valuation
             if item['marketplace']=='facebook':item['inbound_shipping']=by_id[selected]['pickup_cost'] if selected else None
-            fallback=value_listing(item,item['extraction']|{'status':'needs_review'},[],self.store.config('settings'))|{'watchlist_id':None,'reason':'Assign this listing to an available search before valuation.'}
+            fallback=value_listing(item,item['extraction']|{'status':'needs_review'},[],self.store.config('settings'))|{'watchlist_id':None,'reason':'Assign this listing to an available search before valuation.','blockers':[{'code':'search','message':'Assign this listing to an available search before valuation.'}]}
             item|={'distance_by_watchlist':distances,'watchlist_ids':ids,'display_watchlist_id':selected,'valuations':valuations,
                    'valuation':valuations.get(str(selected),fallback)}
             listings.append(item)

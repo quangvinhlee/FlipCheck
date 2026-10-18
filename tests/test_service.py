@@ -101,3 +101,17 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(item['watchlist_ids'],[])
         self.assertFalse(item['valuation']['opportunity'])
         self.assertEqual(item['valuation']['method'],'unavailable')
+
+    def test_valuation_explains_all_blockers_and_can_admit_supported_deal(self):
+        self.app.start('import',[self.imported()]);self.wait_job()
+        item=self.app.state()['listings'][0]
+        self.assertIn('sales', [b['code'] for b in item['valuation']['blockers']])
+        from flipcheck.products import normalize_product_comparison
+        from flipcheck.domain import local_date
+        facts=item['extraction']['facts']
+        for i in range(5):
+            self.store.add_comparison(normalize_product_comparison(dict(external_id=f'blocker-test-{i}',source='test-receipt',reference=f'test-only-{i}',sold_at=local_date().isoformat(),collected_at=local_date().isoformat(),verified=True,actual_price_known=True,currency='AUD',country='AU',sold_price=700,shipping=0,condition_evidence='good',category='laptop',**facts)))
+        valued=self.app.state()['listings'][0]['valuation']
+        self.assertTrue(valued['opportunity']);self.assertEqual(valued['blockers'],[])
+        self.store.set_extraction(item['id'],item['extraction']|{'status':'needs_review','unknown_fields':['condition']})
+        self.assertIn('condition', [b['code'] for b in self.app.state()['listings'][0]['valuation']['blockers']])

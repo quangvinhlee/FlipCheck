@@ -404,6 +404,32 @@ export default function Dashboard() {
                 locked={!!locked}
               />
               {data.job && <JobBanner job={data.job} />}
+              {data.comparisons.length === 0 && (
+                <section
+                  className="valuation-notice"
+                  aria-label="Why there are no verified opportunities"
+                >
+                  <div>
+                    <strong>
+                      Profit estimates need completed-sale evidence
+                    </strong>
+                    <p>
+                      Your workspace has no completed sales. Searches discover
+                      asking prices; they do not automatically collect verified
+                      transaction prices. A verified opportunity requires five
+                      matching completed sales, confirmed product details and
+                      known collection/shipping costs.
+                    </p>
+                  </div>
+                  <button
+                    className="button secondary"
+                    onClick={() => setPanel("import-sales")}
+                  >
+                    Import completed sales
+                    <FileUp size={15} />
+                  </button>
+                </section>
+              )}
               <section className="stats-grid" aria-label="Workspace summary">
                 <Stat
                   icon={Monitor}
@@ -415,7 +441,11 @@ export default function Dashboard() {
                   icon={ArrowUpRight}
                   label="Worth a closer look"
                   value={data.counts.opportunities}
-                  note="Conservative margin meets target"
+                  note={
+                    data.comparisons.length === 0
+                      ? "Blocked: no completed-sale evidence"
+                      : "Verified conservative margin meets target"
+                  }
                   accent
                 />
                 <Stat

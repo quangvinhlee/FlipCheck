@@ -46,9 +46,18 @@ export function assessment(item: Listing): {
     item.inbound_shipping == null
   )
     return {
-      label: "Needs review",
+      label: item.extraction.legacy
+        ? "Reanalyse listing"
+        : item.extraction.unknown_fields?.includes("condition")
+          ? "Condition unknown"
+          : item.inbound_shipping == null &&
+              item.extraction.status === "eligible"
+            ? item.marketplace === "facebook"
+              ? "Pickup cost unknown"
+              : "Shipping unknown"
+            : "Check specifications",
       tone: "amber",
-      short: "Confirm missing details",
+      short: item.valuation.blockers?.[0]?.message || "Confirm missing details",
     };
   if (item.valuation.opportunity)
     return {

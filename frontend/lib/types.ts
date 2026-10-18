@@ -97,6 +97,7 @@ export interface Scenario {
   roi: number | null;
 }
 export interface Valuation {
+  blockers?: { code: string; message: string }[];
   method:
     | "unavailable"
     | "verified_comparisons"

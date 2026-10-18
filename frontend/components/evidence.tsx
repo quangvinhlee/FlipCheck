@@ -211,6 +211,21 @@ export default function Evidence({
           )}
         </div>
       </section>
+      {!!v.blockers?.length && (
+        <section className="detail-section valuation-blockers">
+          <h3>What blocks this opportunity</h3>
+          <ul>
+            {v.blockers.map((b, index) => (
+              <li key={index}>{b.message}</li>
+            ))}
+          </ul>
+          <p className="micro-copy">
+            Reanalyse outdated extraction, confirm missing facts with Correct,
+            and import genuine completed sales. A user-entered resale assumption
+            remains an assumption.
+          </p>
+        </section>
+      )}
       <section className="detail-section">
         <h3>
           Source listing

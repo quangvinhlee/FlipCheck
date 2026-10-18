@@ -318,9 +318,31 @@ def quartile(values, fraction):
     return float((values[low] + (values[high] - values[low]) * (pos - low)).quantize(Decimal(".01")))
 
 
+def valuation_blockers(listing, extraction, matched, settings):
+    blockers=[]
+    def add(code,message):blockers.append({'code':code,'message':message})
+    if extraction.get('legacy'):add('legacy','Reanalyse this listing: its saved extraction uses an older format.')
+    if extraction.get('status')=='rejected':add('excluded',extraction.get('reason','This listing is excluded.'))
+    elif extraction.get('status')!='eligible':
+        missing=extraction.get('unknown_fields') or []
+        if 'condition' in missing or extraction.get('facts',{}).get('condition') is None:
+            add('condition','Seller condition is unknown or unsupported. Confirm it from the original listing before valuation.')
+        others=[key.replace('_',' ') for key in missing if key!='condition']
+        if others:add('specifications','Missing product details: '+', '.join(others)+'.')
+        if not missing and not extraction.get('legacy'):add('extraction','Resolve unsupported or conflicting product evidence.')
+    if len(matched)<5:
+        add('sales',f'{len(matched)}/5 matching verified completed sales. Live searches provide asking prices, not completed-sale evidence.')
+        if settings.get('assumed_resale') is not None:add('assumption','Your resale assumption is not verified market evidence and cannot earn an opportunity badge.')
+    if listing.get('inbound_shipping') is None:
+        add('pickup' if listing.get('marketplace')=='facebook' else 'shipping',
+            'Set the pickup/travel allowance for this search.' if listing.get('marketplace')=='facebook' else 'Confirm inbound shipping before calculating margin.')
+    if listing['asking_price']>settings['max_price']:add('budget','Asking price exceeds this search budget.')
+    return blockers
+
+
 def value_listing(listing, extraction, comparisons, settings):
     matched = matching_comparisons(listing, extraction, comparisons, settings)
-    result = {"method": "unavailable", "comparisons": matched, "count": len(matched), "scenarios": {},
+    result = {"blockers": valuation_blockers(listing, extraction, matched, settings), "method": "unavailable", "comparisons": matched, "count": len(matched), "scenarios": {},
               "opportunity": False, "reason": "Insufficient comparable sales (at least 5 required).", "costs": settings.copy(), "valued_at": now()}
     if extraction.get("status") != "eligible":
         result["reason"] = "Resolve extraction or listing eligibility before valuation."
