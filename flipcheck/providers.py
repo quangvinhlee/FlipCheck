@@ -51,7 +51,7 @@ def request_json(url, payload=None, *, timeout=15, retries=0, on_attempt=None):
             on_attempt()
         try:
             req = Request(url, data=None if payload is None else json.dumps(payload).encode(),
-                          headers={"Content-Type": "application/json", "User-Agent": "FlipCheck/0.1"})
+                          headers={"Content-Type": "application/json", "User-Agent": "FlipCheck/0.3 (+https://github.com/quangvinhlee/FlipCheck)"})
             with urlopen(req, timeout=timeout) as response:
                 body = response.read(4_000_001)
                 if len(body) > 4_000_000:

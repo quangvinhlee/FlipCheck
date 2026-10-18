@@ -71,3 +71,31 @@ class MultiSearchTests(unittest.TestCase):
             with self.assertRaises(ValueError):self.app.start('live',watchlist_ids=[self.a['id']])
             self.store.save_watchlist({'enabled':False},self.b['id'])
             with self.assertRaises(ValueError):self.app.start('live')
+
+    def test_both_sources_preserve_ebay_when_facebook_fails(self):
+        from test_facebook import CENTER
+        self.store.save_watchlist({'sources':['ebay','facebook'],'location':CENTER},self.a['id'])
+        def ebay(settings,on_request=None):on_request();return [self.listing(1)],[]
+        with patch.dict(os.environ,{'SERPAPI_KEY':'test'},clear=True),patch('flipcheck.service.search_ebay',ebay):
+            self.app.start('live',watchlist_ids=[self.a['id']]);self.wait()
+        self.assertEqual(self.app.job['status'],'partial')
+        self.assertEqual(len(self.app.state()['listings']),1)
+        self.assertEqual([s['source'] for s in self.app.job['searches']],['ebay','facebook'])
+        self.assertIn('APIFY_TOKEN',' '.join(self.app.job['errors']))
+
+    def test_facebook_only_needs_no_serpapi_and_has_independent_distances(self):
+        from test_facebook import CENTER,row
+        from flipcheck.facebook import parse_facebook
+        self.store.save_watchlist({'sources':['facebook'],'location':CENTER,'pickup_cost':12},self.a['id'])
+        self.store.save_watchlist({'sources':['facebook'],'location':CENTER|{'latitude':-37.82},'pickup_cost':30},self.b['id'])
+        def facebook(settings,limit=10,on_request=None):on_request();return parse_facebook([row()],settings)
+        with patch.dict(os.environ,{'APIFY_TOKEN':'test'},clear=True),patch('flipcheck.service.search_facebook',facebook):
+            self.app.start('live',watchlist_ids=[self.a['id'],self.b['id']]);self.wait()
+        self.assertEqual(self.app.job['status'],'completed')
+        self.assertEqual(self.model.calls,1)
+        item=self.app.state()['listings'][0]
+        self.assertNotEqual(item['distance_by_watchlist'][str(self.a['id'])],item['distance_by_watchlist'][str(self.b['id'])])
+        self.assertEqual(item['valuations'][str(self.b['id'])]['costs']['pickup_cost'],30)
+        self.store.save_watchlist({'location':CENTER|{'latitude':-33.86,'longitude':151.2}},self.b['id'])
+        stale=self.app.state()['listings'][0]['valuations'][str(self.b['id'])]
+        self.assertEqual(stale['method'],'unavailable');self.assertIn('radius',stale['reason'])

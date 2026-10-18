@@ -7,6 +7,8 @@ import time
 from .domain import now, normalize_listing, source_text, validate_settings, value_listing
 from .products import VERSION, validate_product_extraction, normalize_product_comparison, adapt_legacy_extraction
 from .providers import Ollama, ProviderError, SCHEMA, SYSTEM, search_ebay
+from .facebook import search_facebook
+from .locations import distance_km
 
 
 class App:
@@ -17,7 +19,7 @@ class App:
     def health(self,refresh=False):
         if refresh or self.health_cache is None or time.monotonic()-self.health_time>30:
             self.health_cache=self.model.health();self.health_time=time.monotonic()
-        return self.health_cache|{'serpapi_configured':bool(os.getenv('SERPAPI_KEY')),'cloud_fallback':False}
+        return self.health_cache|{'serpapi_configured':bool(os.getenv('SERPAPI_KEY')),'facebook_configured':bool(os.getenv('APIFY_TOKEN')),'cloud_fallback':False}
 
     def busy_guard(self):
         if self.job and self.job.get('status')=='running':raise ValueError('A scan is running. Wait for it to finish before editing searches or importing data.')
@@ -32,9 +34,27 @@ class App:
             ids=[i for i in self.store.matches(item['id']) if i in by_id]
             active=[i for i in ids if by_id[i]['enabled']]
             selected=(active or ids or [None])[0]
-            valuations={str(i):value_listing(item,item['extraction'],comparisons,by_id[i])|{'watchlist_id':i} for i in ids}
+            distances={};valuations={}
+            for i in ids:
+                w=by_id[i];cost_item=item
+                source='facebook' if item['marketplace']=='facebook' else 'ebay'
+                invalid=None
+                if source not in w['sources']:invalid='This search no longer includes this marketplace source.'
+                if source=='facebook':
+                    cost_item=item|{'inbound_shipping':w['pickup_cost']}
+                    try:distances[str(i)]=round(distance_km(w.get('location') or {},item),2)
+                    except ValueError:distances[str(i)]=None
+                    if distances[str(i)] is None or distances[str(i)]>w['radius_km']:
+                        invalid='Published location is unknown or outside the current pickup radius.'
+                checked=item['extraction'] if invalid is None else item['extraction']|{'status':'needs_review'}
+                valuation=value_listing(cost_item,checked,comparisons,w)|{'watchlist_id':i}
+                if invalid:valuation['reason']=invalid
+                elif source=='facebook' and w['pickup_cost'] is None:
+                    valuation['reason']='Pickup/travel allowance is unknown; margin cannot be calculated.'
+                valuations[str(i)]=valuation
+            if item['marketplace']=='facebook':item['inbound_shipping']=by_id[selected]['pickup_cost'] if selected else None
             fallback=value_listing(item,item['extraction']|{'status':'needs_review'},[],self.store.config('settings'))|{'watchlist_id':None,'reason':'Assign this listing to an available search before valuation.'}
-            item|={'watchlist_ids':ids,'display_watchlist_id':selected,'valuations':valuations,
+            item|={'distance_by_watchlist':distances,'watchlist_ids':ids,'display_watchlist_id':selected,'valuations':valuations,
                    'valuation':valuations.get(str(selected),fallback)}
             listings.append(item)
         with self.lock:
@@ -97,7 +117,6 @@ class App:
             normalized=[normalize_listing(row) for row in rows]
         with self.lock:
             self.busy_guard()
-            if kind=='live' and not os.getenv('SERPAPI_KEY'):raise ValueError('Configure SERPAPI_KEY in the private .env, or import real listings.')
             if not self.health(refresh=True)['available']:raise ValueError('Start Ollama and install the configured local model first.')
             if kind=='analyse':
                 listing=self.store.listing(listing_id)
@@ -106,6 +125,8 @@ class App:
                 linked=self.store.matches(listing['id'])
                 chosen=[w for w in self.store.watchlists() if w['id'] in linked]
             else:chosen=self.selected_watchlists(watchlist_ids)
+            if kind=='live' and not any((source=='ebay' and os.getenv('SERPAPI_KEY')) or (source=='facebook' and os.getenv('APIFY_TOKEN')) for w in chosen for source in w['sources']):
+                raise ValueError('Configure SERPAPI_KEY for eBay or APIFY_TOKEN for Facebook in your private .env, then restart.')
             if kind=='import' and watchlist_ids is None and len(chosen)>1:raise ValueError('Select the search associated with this listing import.')
             if kind=='import' and len(chosen)!=1:raise ValueError('Import listings into one selected search.')
             self.job={'status':'running','kind':kind,'phase':'searching' if kind=='live' else 'analysing','started_at':now(),
@@ -124,23 +145,26 @@ class App:
             candidates={}
             if kind=='live':
                 for w in watchlists:
-                    search_run={'watchlist_id':w['id'],'name':w['name'],'query':w['query'],'status':'running','requests':0,'admitted':0}
-                    with self.lock:job['searches'].append(search_run)
-                    self.update_job(job,message=f"Searching {w['name']}…",phase='searching')
-                    def count_request():
-                        with self.lock:job['requests']+=1;search_run['requests']+=1
-                    try:
-                        found,skipped=search_ebay(w,on_request=count_request)
-                        for raw in found[:10]:
-                            key=(raw['marketplace'],raw['external_id'])
-                            if key not in candidates:candidates[key]={'listing':raw,'ids':[]}
-                            if w['id'] not in candidates[key]['ids']:candidates[key]['ids'].append(w['id'])
-                        with self.lock:
-                            job['skipped'].extend(s|{'watchlist_id':w['id']} for s in skipped)
-                            search_run.update(status='completed',admitted=min(10,len(found)))
-                    except (ProviderError,ValueError) as exc:
-                        with self.lock:
-                            job['errors'].append(f"{w['name']}: {exc}");search_run.update(status='failed',error=str(exc))
+                    sources=w['sources'];limit=10//len(sources)
+                    for source in sources:
+                        source_name='Facebook Marketplace' if source=='facebook' else 'eBay AU'
+                        search_run={'watchlist_id':w['id'],'name':w['name'],'query':w['query'],'source':source,'status':'running','requests':0,'admitted':0}
+                        with self.lock:job['searches'].append(search_run)
+                        self.update_job(job,message=f"Searching {w['name']} on {source_name}…",phase='searching')
+                        def count_request():
+                            with self.lock:job['requests']+=1;search_run['requests']+=1
+                        try:
+                            found,skipped=(search_facebook(w,limit=limit,on_request=count_request) if source=='facebook' else search_ebay(w,on_request=count_request))
+                            for raw in found[:limit]:
+                                key=(raw['marketplace'],raw['external_id'])
+                                if key not in candidates:candidates[key]={'listing':raw,'ids':[]}
+                                if w['id'] not in candidates[key]['ids']:candidates[key]['ids'].append(w['id'])
+                            with self.lock:
+                                job['skipped'].extend(s|{'watchlist_id':w['id'],'source':source} for s in skipped)
+                                search_run.update(status='completed',admitted=min(limit,len(found)))
+                        except (ProviderError,ValueError) as exc:
+                            with self.lock:
+                                job['errors'].append(f"{w['name']} ({source_name}): {exc}");search_run.update(status='failed',error=str(exc))
             else:
                 for listing in listings or []:candidates[(listing['marketplace'],listing['external_id'])]={'listing':listing,'ids':[w['id'] for w in watchlists]}
             self.update_job(job,total=len(candidates),phase='analysing')
@@ -165,7 +189,7 @@ class App:
                 self.update_job(job,processed=job['processed']+1)
             self.snapshot_all()
             failures=sum(s['status']=='failed' for s in job['searches'])
-            final_status='failed' if kind=='live' and failures==len(watchlists) else ('partial' if job['errors'] or job['skipped'] else 'completed')
+            final_status='failed' if kind=='live' and failures==len(job['searches']) else ('partial' if job['errors'] or job['skipped'] else 'completed')
             self.update_job(job,message=f"Processed {job['processed']} unique listings across {len(watchlists)} searches; {len(job['errors'])} errors, {len(job['skipped'])} skipped results.")
         except Exception as exc:
             final_status='failed'

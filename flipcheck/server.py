@@ -58,7 +58,7 @@ def create_server(app, port=8765):
                 state = app.state()
                 return self.reply({k: state[k] for k in ("settings", "watchlists", "listings", "comparisons", "scans")})
             if path == "/api/templates/listings":
-                return self.reply({"listings": [], "instructions": "Add original seller title/description, stable external_id or ebay.com.au item URL, asking_price, inbound_shipping (null if unknown), currency=AUD, country=AU, buying_format=fixed_price. Choose one search when importing."})
+                return self.reply({"listings": [], "instructions": "Add original seller title/description, stable external_id or original eBay/Facebook item URL; marketplace=facebook for Facebook imports, asking_price, inbound_shipping (null if unknown), currency=AUD, country=AU, buying_format=fixed_price. Choose one search when importing."})
             if path == "/api/templates/comparisons":
                 return self.reply({"comparisons": [], "instructions": "Supply genuine completed transactions, category, brand, exact model, condition, material profile attributes, source/reference, verified/actual_price_known, sold_at/collected_at, currency=AUD, country=AU, sold_price and shipping. No example sales are preloaded."})
             return self.reply({"error": "Not found."}, 404)
@@ -81,7 +81,10 @@ def create_server(app, port=8765):
                 if not isinstance(data, dict):
                     raise ValueError("Request body must be a JSON object.")
                 path = urlparse(self.path).path
-                if path == "/api/watchlists/save":
+                if path == "/api/location/search":
+                    from .locations import lookup_place
+                    result = lookup_place(data.get("query"))
+                elif path == "/api/watchlists/save":
                     result = app.save_watchlist(data)
                 elif path == "/api/watchlists/archive":
                     result = app.archive_watchlist(data.get("id"))
