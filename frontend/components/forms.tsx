@@ -16,6 +16,8 @@ import type {
   Watchlist,
   Category,
 } from "@/lib/types";
+import SearchLocationFields from "./search-location";
+import type { SearchLocation, MarketplaceSource } from "@/lib/types";
 import { parseImport } from "@/lib/import";
 import { download } from "@/lib/format";
 
@@ -43,6 +45,7 @@ function Field({
       <span>{label}</span>
       <input
         name={name}
+        aria-label={label}
         type={type}
         defaultValue={value ?? ""}
         required={!optional}
@@ -77,7 +80,11 @@ export function SettingsForm({
   pending,
   onClose,
   watchlist,
+  csrfToken,
+  facebookConfigured,
 }: {
+  csrfToken: string;
+  facebookConfigured: boolean;
   watchlist?: Watchlist;
   settings: Settings;
   mutate: Mutation;
@@ -85,6 +92,12 @@ export function SettingsForm({
   onClose: () => void;
 }) {
   const [error, setError] = useState("");
+  const [sources, setSources] = useState<MarketplaceSource[]>(
+    watchlist?.sources || ["ebay"],
+  );
+  const [location, setLocation] = useState<SearchLocation | null>(
+    watchlist?.location || null,
+  );
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = Object.fromEntries(new FormData(e.currentTarget));
@@ -103,6 +116,8 @@ export function SettingsForm({
         "watchlists/save",
         {
           ...values,
+          sources,
+          location,
           id: watchlist?.id,
           enabled: form.enabled === "on",
           name: String(form.name || form.query),
@@ -175,6 +190,32 @@ export function SettingsForm({
             value={s.min_margin}
           />
         </div>
+        <SearchLocationFields
+          sources={sources}
+          setSources={setSources}
+          location={location}
+          setLocation={setLocation}
+          csrfToken={csrfToken}
+          facebookConfigured={facebookConfigured}
+        />
+        {sources.includes("facebook") && (
+          <div className="form-grid nearby-costs">
+            <Field
+              label="Pickup radius (km)"
+              name="radius_km"
+              value={watchlist?.radius_km ?? 25}
+              step="1"
+              help="1–500 km from your selected center."
+            />
+            <Field
+              label="Pickup / travel allowance (AUD)"
+              name="pickup_cost"
+              value={watchlist?.pickup_cost}
+              optional
+              help="Leave unknown to require review. Enter 0 only when collection has no cost."
+            />
+          </div>
+        )}
         <h3 className="form-section">
           02 <span>Fees & fulfilment</span>
         </h3>
@@ -508,8 +549,14 @@ export function CorrectionForm({
         id: item.id,
         note,
         extraction,
-        inbound_shipping:
-          form.inbound_shipping === "" ? null : Number(form.inbound_shipping),
+        ...(item.marketplace === "facebook"
+          ? {}
+          : {
+              inbound_shipping:
+                form.inbound_shipping === ""
+                  ? null
+                  : Number(form.inbound_shipping),
+            }),
       });
       onComplete();
     } catch (e) {
@@ -600,12 +647,14 @@ export function CorrectionForm({
               />
             ),
           )}
-          <Field
-            label="Inbound shipping (AUD)"
-            name="inbound_shipping"
-            value={item.inbound_shipping}
-            optional
-          />
+          {item.marketplace !== "facebook" && (
+            <Field
+              label="Inbound shipping (AUD)"
+              name="inbound_shipping"
+              value={item.inbound_shipping}
+              optional
+            />
+          )}
           <label className="field wide">
             <span>How did you confirm these details?</span>
             <textarea

@@ -42,7 +42,7 @@ class App:
                 if source not in w['sources']:invalid='This search no longer includes this marketplace source.'
                 if source=='facebook':
                     cost_item=item|{'inbound_shipping':w['pickup_cost']}
-                    try:distances[str(i)]=round(distance_km(w.get('location') or {},item),2)
+                    try:distances[str(i)]=distance_km(w.get('location') or {},item)
                     except ValueError:distances[str(i)]=None
                     if distances[str(i)] is None or distances[str(i)]>w['radius_km']:
                         invalid='Published location is unknown or outside the current pickup radius.'

@@ -86,8 +86,8 @@ class MultiSearchTests(unittest.TestCase):
     def test_facebook_only_needs_no_serpapi_and_has_independent_distances(self):
         from test_facebook import CENTER,row
         from flipcheck.facebook import parse_facebook
-        self.store.save_watchlist({'sources':['facebook'],'location':CENTER,'pickup_cost':12},self.a['id'])
-        self.store.save_watchlist({'sources':['facebook'],'location':CENTER|{'latitude':-37.82},'pickup_cost':30},self.b['id'])
+        self.store.save_watchlist({'sources':['facebook'],'location':CENTER,'pickup_cost':12,'assumed_resale':1000},self.a['id'])
+        self.store.save_watchlist({'sources':['facebook'],'location':CENTER|{'latitude':-37.82},'pickup_cost':30,'assumed_resale':1000},self.b['id'])
         def facebook(settings,limit=10,on_request=None):on_request();return parse_facebook([row()],settings)
         with patch.dict(os.environ,{'APIFY_TOKEN':'test'},clear=True),patch('flipcheck.service.search_facebook',facebook):
             self.app.start('live',watchlist_ids=[self.a['id'],self.b['id']]);self.wait()
@@ -96,6 +96,20 @@ class MultiSearchTests(unittest.TestCase):
         item=self.app.state()['listings'][0]
         self.assertNotEqual(item['distance_by_watchlist'][str(self.a['id'])],item['distance_by_watchlist'][str(self.b['id'])])
         self.assertEqual(item['valuations'][str(self.b['id'])]['costs']['pickup_cost'],30)
+        self.assertEqual(item['valuations'][str(self.a['id'])]['scenarios']['assumed']['margin']-item['valuations'][str(self.b['id'])]['scenarios']['assumed']['margin'],18)
+        self.store.save_watchlist({'pickup_cost':None},self.b['id'])
+        unknown=self.app.state()['listings'][0]['valuations'][str(self.b['id'])]
+        self.assertIsNone(unknown['scenarios']['assumed']);self.assertFalse(unknown['opportunity'])
         self.store.save_watchlist({'location':CENTER|{'latitude':-33.86,'longitude':151.2}},self.b['id'])
         stale=self.app.state()['listings'][0]['valuations'][str(self.b['id'])]
         self.assertEqual(stale['method'],'unavailable');self.assertIn('radius',stale['reason'])
+
+    def test_radius_comparison_does_not_round_outside_listing_inside(self):
+        from test_facebook import CENTER,row
+        from flipcheck.facebook import parse_facebook
+        listing=parse_facebook([row()],{'location':CENTER,'radius_km':25,'max_price':800})[0][0]
+        ident,_=self.store.upsert(listing);self.store.link_listing(ident,self.a['id'])
+        self.store.save_watchlist({'sources':['facebook'],'location':CENTER,'radius_km':25,'pickup_cost':0},self.a['id'])
+        with patch('flipcheck.service.distance_km',return_value=25.004):
+            value=self.app.state()['listings'][0]['valuation']
+        self.assertIn('radius',value['reason'])

@@ -34,6 +34,9 @@ import type { LucideIcon } from "lucide-react";
 import { useWorkspace } from "@/lib/use-workspace";
 import {
   assessment,
+  effectiveListing,
+  sourceLabel,
+  pickupLine,
   aud,
   download,
   margin,
@@ -119,8 +122,7 @@ export default function Dashboard() {
         ? x.display_watchlist_id
         : Number(effectiveSearch);
     return {
-      ...x,
-      valuation: x.valuations[String(chosen)] || x.valuation,
+      ...effectiveListing(x, chosen),
       valuation_source:
         data?.watchlists.find((w) => w.id === chosen)?.name || "Unassigned",
       watchlist_names:
@@ -181,13 +183,7 @@ export default function Dashboard() {
         : "Good find. Saved to your shortlist.",
     ).catch(() => {});
   const scan = (ids?: number[]) => {
-    if (!data?.health.serpapi_configured) {
-      notify(
-        "Add SERPAPI_KEY to your local .env and restart the Python service, or import listings.",
-        true,
-      );
-      return;
-    }
+    if (!data) return;
     if (!data.health.available) {
       notify(
         "Start Ollama with your configured Gemma 4 model before scanning.",
@@ -198,7 +194,7 @@ export default function Dashboard() {
     void mutate(
       "scan",
       ids ? { watchlist_ids: ids } : {},
-      "Scanning eBay Australia. Gemma will analyse each result locally.",
+      "Scanning selected marketplaces. Gemma will analyse each result locally.",
     )
       .then(() => navigate("scout"))
       .catch(() => {});
@@ -395,8 +391,8 @@ export default function Dashboard() {
                   <ShieldCheck size={17} />
                   <strong>Real listings only</strong>
                   <span>
-                    Searches go to eBay AU through SerpApi. Gemma 4 analyses
-                    locally. No sample listings or sales.
+                    eBay and Facebook searches use your selected providers.
+                    Gemma 4 analyses locally. No sample listings or sales.
                   </span>
                 </div>
               </div>
@@ -697,6 +693,8 @@ export default function Dashboard() {
           <SettingsForm
             settings={editing || { ...data.settings, query: "" }}
             watchlist={editing ?? undefined}
+            csrfToken={data.csrf_token}
+            facebookConfigured={data.health.facebook_configured}
             mutate={mutate}
             pending={!!pending}
             onClose={() => setEditing(undefined)}
@@ -822,11 +820,12 @@ function DealRow({
             <p>{specLine(x)}</p>
             <span className="matched-searches">
               {x.watchlist_names?.join(" · ")}
+              {x.marketplace === "facebook" && <span>{pickupLine(x)}</span>}
               <span>Costs: {x.valuation_source}</span>
             </span>
             <span className="listing-source">
               <span className="source-dot" />
-              {`eBay AU · ${relative(x.last_seen)}`}
+              {`${sourceLabel(x)} · ${relative(x.last_seen)}`}
             </span>
           </div>
         </div>
@@ -836,11 +835,15 @@ function DealRow({
         <span
           className={`cell-note ${x.inbound_shipping == null ? "warning-text" : ""}`}
         >
-          {x.inbound_shipping == null
-            ? "Shipping unknown"
-            : x.inbound_shipping === 0
-              ? "Free postage"
-              : `+ ${aud(x.inbound_shipping)} postage`}
+          {x.marketplace === "facebook"
+            ? x.inbound_shipping == null
+              ? "Pickup cost unknown"
+              : `${aud(x.inbound_shipping)} pickup allowance`
+            : x.inbound_shipping == null
+              ? "Shipping unknown"
+              : x.inbound_shipping === 0
+                ? "Free postage"
+                : `+ ${aud(x.inbound_shipping)} postage`}
         </span>
       </td>
       <td>
@@ -968,6 +971,11 @@ function DealCard({
         <p>{specLine(x)}</p>
         <span className="matched-searches">
           {x.watchlist_names?.join(" · ")}
+          {x.marketplace === "facebook" && (
+            <span>
+              {sourceLabel(x)} · {pickupLine(x)}
+            </span>
+          )}
           <span>Costs: {x.valuation_source}</span>
         </span>
         <div className="deal-card-numbers">
@@ -1164,7 +1172,7 @@ function JobBanner({ job }: { job: Job }) {
           <strong>{job.message}</strong>
           <span>
             {job.kind === "live"
-              ? "eBay AU → local Gemma 4"
+              ? "Selected marketplaces → local Gemma 4"
               : "Local Gemma 4 analysis"}{" "}
             ·{" "}
             {running
@@ -1184,6 +1192,16 @@ function JobBanner({ job }: { job: Job }) {
           value={job.total ? job.processed : undefined}
           aria-label="Scan progress"
         />
+      )}
+      {!!job.searches?.length && (
+        <div className="source-outcomes">
+          {job.searches.map((s, i) => (
+            <span key={i}>
+              {s.name} · {s.source === "facebook" ? "Facebook" : "eBay"}:{" "}
+              {s.status} · {s.admitted} listings
+            </span>
+          ))}
+        </div>
       )}
       {job.errors.length + job.skipped.length > 0 && (
         <details>
@@ -1246,7 +1264,7 @@ function ScanHistory({
           <div>
             <h3>
               {job.kind === "live"
-                ? "eBay Australia scan"
+                ? "Marketplace scan"
                 : job.kind === "analyse"
                   ? "Local re-analysis"
                   : "Listing import"}

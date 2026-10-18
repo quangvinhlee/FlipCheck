@@ -13,7 +13,16 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Listing, Mutation, SpecKey, Watchlist } from "@/lib/types";
-import { assessment, aud, margin, scenario, specLine } from "@/lib/format";
+import {
+  assessment,
+  aud,
+  margin,
+  scenario,
+  specLine,
+  effectiveListing,
+  sourceLabel,
+  pickupLine,
+} from "@/lib/format";
 import LaptopArt from "./laptop-art";
 import { CategoryIcon } from "./watchlists";
 
@@ -44,7 +53,7 @@ export default function Evidence({
   const [searchId, setSearchId] = useState(
     String(item.valuation.watchlist_id || item.display_watchlist_id || ""),
   );
-  const x = { ...item, valuation: item.valuations[searchId] || item.valuation },
+  const x = effectiveListing(item, searchId ? Number(searchId) : null),
     f = x.extraction.facts,
     v = x.valuation,
     s = scenario(x);
@@ -70,7 +79,12 @@ export default function Evidence({
   ];
   const costs: [string, number | null | undefined][] = [
     ["Purchase price", x.asking_price],
-    ["Inbound postage", x.inbound_shipping],
+    [
+      x.marketplace === "facebook"
+        ? "Pickup / travel allowance"
+        : "Inbound postage",
+      x.inbound_shipping,
+    ],
     ["Repairs", v.costs.repairs],
     ["Packaging", v.costs.packaging],
     ["Outbound postage", v.costs.outbound_shipping],
@@ -99,9 +113,13 @@ export default function Evidence({
           </div>
         )}
         <div>
-          <span className="eyebrow">EBAY AUSTRALIA</span>
+          <span className="eyebrow">{sourceLabel(x).toUpperCase()}</span>
           <h3>{title}</h3>
           <p>{specLine(x)}</p>
+          <p>
+            {sourceLabel(x)}
+            {x.marketplace === "facebook" ? ` · ${pickupLine(x)}` : ""}
+          </p>
           <Badge item={x} />
         </div>
       </div>

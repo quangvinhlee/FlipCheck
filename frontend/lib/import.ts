@@ -56,6 +56,9 @@ export function parseImport(
     "storage_gb",
     "sold_price",
     "shipping",
+    "latitude",
+    "longitude",
+    "vram_gb",
   ]);
   const booleans = new Set([
     "verified",

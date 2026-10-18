@@ -13,6 +13,7 @@ const writes = new Set([
   "settings",
   "watchlists/save",
   "watchlists/archive",
+  "location/search",
   "import/listings",
   "import/comparisons",
   "scan",

@@ -45,10 +45,21 @@ export interface Settings {
   labour: number;
   assumed_resale: number | null;
   recency_days: number;
+  pickup_cost?: number | null;
 }
 export type Category =
   "laptop" | "camera" | "phone" | "tablet" | "console" | "gpu" | "other";
+export type MarketplaceSource = "ebay" | "facebook";
+export interface SearchLocation {
+  latitude: number;
+  longitude: number;
+  label: string;
+}
 export interface Watchlist extends Settings {
+  sources: MarketplaceSource[];
+  location: SearchLocation | null;
+  radius_km: number;
+  pickup_cost: number | null;
   id: number;
   name: string;
   category: Category;
@@ -105,6 +116,12 @@ export interface Listing {
   id: number;
   external_id: string;
   marketplace: string;
+  latitude?: number;
+  longitude?: number;
+  location_label?: string;
+  location_is_precise?: boolean;
+  distance_by_watchlist?: Record<string, number | null>;
+  display_distance_km?: number | null;
   title: string;
   description: string;
   url: string | null;
@@ -134,6 +151,7 @@ export interface Job {
   phase?: string;
   searches?: {
     watchlist_id: number;
+    source?: MarketplaceSource;
     name: string;
     query: string;
     status: string;
@@ -165,6 +183,7 @@ export interface Workspace {
     model: string;
     message?: string;
     serpapi_configured: boolean;
+    facebook_configured: boolean;
   };
   counts: {
     scanned: number;

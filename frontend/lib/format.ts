@@ -100,3 +100,26 @@ export function download(data: unknown, name: string) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+export function sourceLabel(item: Listing) {
+  return item.marketplace === "facebook" ? "Facebook Marketplace" : "eBay AU";
+}
+export function pickupLine(item: Listing) {
+  if (item.marketplace !== "facebook") return "";
+  const distance = item.display_distance_km;
+  return distance == null
+    ? "Location not confirmed"
+    : `~${distance.toFixed(1)} km away · ${item.location_label || "published map pin"}`;
+}
+export function effectiveListing(item: Listing, searchId: number | null) {
+  const valuation = item.valuations[String(searchId)] || item.valuation;
+  return {
+    ...item,
+    valuation,
+    inbound_shipping:
+      item.marketplace === "facebook"
+        ? (valuation.costs.pickup_cost ?? null)
+        : item.inbound_shipping,
+    display_distance_km: item.distance_by_watchlist?.[String(searchId)] ?? null,
+  };
+}

@@ -90,6 +90,16 @@ export default function WatchlistManager({
             </div>
             <h3>{w.name}</h3>
             <p title={w.query}>{w.query}</p>
+            <p className="search-sources">
+              {(w.sources || ["ebay"])
+                .map((s) => (s === "facebook" ? "Facebook" : "eBay AU"))
+                .join(" + ")}
+            </p>
+            {w.sources?.includes("facebook") && (
+              <p className="search-location-label" title={w.location?.label}>
+                {w.location?.label} · {w.radius_km} km radius
+              </p>
+            )}
             <div className="search-prices">
               <span>
                 Buy under<strong>{aud(w.max_price)}</strong>

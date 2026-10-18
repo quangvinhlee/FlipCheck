@@ -65,3 +65,20 @@ class FacebookTests(unittest.TestCase):
         with patch.dict('os.environ',{'APIFY_TOKEN':'secret'}),patch('flipcheck.facebook.apify_request',running),patch('flipcheck.facebook.time.monotonic',side_effect=[0,200]):
             with self.assertRaises(ProviderError):facebook.search_facebook(settings())
         self.assertTrue(any('/abort' in path for path in calls))
+
+    def test_live_nested_provider_shape_and_malformed_details(self):
+        # Synthetic analogue of the documented nested response seen in the live probe.
+        raw=row();raw.pop('latitude');raw.pop('longitude');raw.pop('listingPrice')
+        raw['listing_price']={'amount':'400','formatted_amount':'AU$400'}
+        raw['moreDetails']={'location':{'latitude':-37.81,'longitude':144.96},'listing_price':{'amount':'400','currency':'AUD'},'redacted_description':{'text':'Original seller description'},'location_text':'Melbourne VIC'}
+        listings,skips=facebook.parse_facebook([raw],settings())
+        self.assertEqual(len(listings),1);self.assertEqual(skips,[])
+        self.assertEqual(listings[0]['description'],'Original seller description')
+        listings,skips=facebook.parse_facebook([row(moreDetails=['invalid']),row(isSold=None),row(isPending=None),row(moreDetails={'is_sold':True})],settings())
+        self.assertEqual(listings,[]);self.assertEqual(len(skips),4)
+        raw['moreDetails']['is_multi_variant_listing']=True
+        self.assertEqual(facebook.parse_facebook([raw],settings())[0],[])
+
+    def test_bad_run_response_is_provider_error(self):
+        with patch.dict('os.environ',{'APIFY_TOKEN':'secret'}),patch('flipcheck.facebook.apify_request',return_value=['unexpected']):
+            with self.assertRaises(ProviderError):facebook.search_facebook(settings())

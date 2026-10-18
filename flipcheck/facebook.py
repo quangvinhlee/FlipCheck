@@ -44,28 +44,39 @@ def parse_facebook(rows,settings):
         title=str(row.get('listingTitle',row.get('marketplace_listing_title','Unknown listing')))[:150] if isinstance(row,dict) else 'Invalid record'
         try:
             if not isinstance(row,dict):raise ValueError('Invalid Marketplace listing.')
-            if row.get('isLive',row.get('is_live')) is not True or row.get('isSold',row.get('is_sold')) is True or row.get('isPending',row.get('is_pending')) is True or row.get('isHidden',row.get('is_hidden')) is True:
+            details=row.get('moreDetails') or {}
+            if not isinstance(details,dict):raise ValueError('Invalid Marketplace detail metadata.')
+            if row.get('isLive',row.get('is_live')) is not True or row.get('isSold',row.get('is_sold')) is not False or row.get('isPending',row.get('is_pending')) is not False or row.get('isHidden',row.get('is_hidden')) is True:
                 raise ValueError('Listing is unavailable, pending, hidden or has unknown availability.')
+            if details.get('is_sold') is True or details.get('is_pending') is True or details.get('is_hidden') is True or details.get('is_live') is False:
+                raise ValueError('Listing detail reports unavailable inventory.')
             if 'IN_PERSON' not in row.get('deliveryTypes',row.get('delivery_types',[])):raise ValueError('Local pickup is not confirmed.')
-            price=row.get('listingPrice',row.get('listing_price',{}))
+            if details.get('is_multi_variant_listing') is True:raise ValueError('Multi-variation listings require manual inspection.')
+            price=details.get('listing_price') or row.get('listingPrice',row.get('listing_price',{}))
             if not isinstance(price,dict) or price.get('currency')!='AUD':raise ValueError('An explicit AUD price is required.')
             amount=money(price.get('amount'))
             if amount>money(settings['max_price']):raise ValueError('Asking price exceeds this search budget.')
-            lat=coordinate(row.get('latitude'),-90,90);lon=coordinate(row.get('longitude'),-180,180)
+            pin=details.get('location') or {}
+            if not isinstance(pin,dict):raise ValueError('Invalid published location metadata.')
+            lat=coordinate(pin.get('latitude',row.get('latitude')),-90,90);lon=coordinate(pin.get('longitude',row.get('longitude')),-180,180)
             if distance_km(center,{'latitude':lat,'longitude':lon})>settings['radius_km']:raise ValueError('Outside the selected pickup radius.')
-            details=row.get('moreDetails') or {}
-            description=row.get('description',details.get('redacted_description',''))
+            description=details.get('redacted_description') or row.get('description','')
             if isinstance(description,dict):description=description.get('text','')
             listing=normalize_listing({'marketplace':'facebook','external_id':row.get('id'),
                 'url':row.get('itemUrl',row.get('listingUrl')),'title':row.get('listingTitle',row.get('marketplace_listing_title')),
                 'description':description or '', 'asking_price':float(amount),'inbound_shipping':None,
                 'currency':'AUD','country':'AU','buying_format':'fixed_price','latitude':lat,'longitude':lon,
-                'location_label':row.get('locationText') or 'Published Marketplace location',
+                'location_label':details.get('location_text') or row.get('locationText') or 'Published Marketplace location',
                 'location_is_precise':row.get('locationIsPrecise') is True})
             listing['location_basis']='Approximate straight-line distance from published map coordinates; verify pickup address.'
             listings.append(listing)
         except (ValueError,TypeError,KeyError) as exc:skipped.append({'title':title,'reason':str(exc)})
     return listings,skipped
+
+
+def run_response(body):
+    if not isinstance(body,dict) or not isinstance(body.get('data'),dict):raise ProviderError('Marketplace provider returned invalid run metadata.')
+    return body['data']
 
 
 def search_facebook(settings,*,limit=10,on_request=None):
@@ -82,12 +93,13 @@ def search_facebook(settings,*,limit=10,on_request=None):
     run_id=None;finished=False
     started=time.monotonic()
     try:
-        run=apify_request(f'/acts/{ACTOR}/runs?{params}',payload=payload,on_request=on_request).get('data',{})
-        run_id=run.get('id')
-        if not isinstance(run_id,str) or not re.fullmatch('[A-Za-z0-9]+',run_id):raise ProviderError('Marketplace provider did not return a valid run ID.')
+        run=run_response(apify_request(f'/acts/{ACTOR}/runs?{params}',payload=payload,on_request=on_request))
+        ident=run.get('id')
+        if not isinstance(ident,str) or not re.fullmatch('[A-Za-z0-9]+',ident):raise ProviderError('Marketplace provider did not return a valid run ID.')
+        run_id=ident
         while run.get('status') not in TERMINAL:
             if time.monotonic()-started>150:raise ProviderError('Marketplace search timed out; saved results from other sources are preserved.')
-            run=apify_request(f'/actor-runs/{run_id}?waitForFinish=5',on_request=on_request).get('data',{})
+            run=run_response(apify_request(f'/actor-runs/{run_id}?waitForFinish=5',on_request=on_request))
             if run.get('status') not in TERMINAL:time.sleep(1)
         finished=True
         if run.get('status')!='SUCCEEDED':raise ProviderError('Marketplace search did not complete successfully. Check the run in Apify.')
