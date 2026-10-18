@@ -1,0 +1,34 @@
+[
+  {
+    "id": "opening", "title": "Good finds. Too many tabs.", "label": "THE PROBLEM", "points": ["Used devices", "Repair projects", "Donor parts"],
+    "voice": "My friend repairs electronics and resells them. Finding his next purchase means checking Facebook Marketplace, eBay, and more, again and again. I built FlipCheck to give him one place to start."
+  },
+  {
+    "id": "searches", "title": "Different products. One sourcing desk.", "label": "01 / SET YOUR SEARCHES", "points": ["Laptops + cameras", "Separate budgets", "Scan together"],
+    "voice": "Save searches for a Legion, a MacBook, or a camera. Each can have its own budget, margin target, and costs. Here, I'm preparing a laptop search alongside the existing camera search."
+  },
+  {
+    "id": "feed", "title": "Two marketplaces. One feed.", "label": "02 / REVIEW REAL LISTINGS", "points": ["eBay Australia", "Facebook Marketplace", "Original seller photos"],
+    "voice": "These are real listings already discovered from eBay Australia and Facebook Marketplace. Switch views, scroll through seller photos, and compare asking prices without starting from a different tab every time."
+  },
+  {
+    "id": "nearby", "title": "Keep pickup within reach.", "label": "03 / SEARCH NEARBY", "points": ["Choose your area", "Set a pickup radius", "Allow for travel costs"],
+    "voice": "For Facebook, choose your location or a suburb, then set a pickup radius. A cheap device across town can be less attractive once you allow for the trip."
+  },
+  {
+    "id": "evidence", "title": "See the product. Check the evidence.", "label": "04 / LOOK CLOSER", "points": ["Browse seller photos", "Read extracted facts", "Check the source text"],
+    "voice": "Open a listing and browse its actual seller photos. Local Gemma extracts the stated specifications and keeps the supporting text beside them. Notice the lens specification beside its source excerpt. Unsupported details stay marked as unknown. You can inspect the evidence and correct details before making a decision."
+  },
+  {
+    "id": "checks", "title": "Missing evidence stays visible.", "label": "05 / KNOW WHAT TO CHECK", "points": ["Condition unknown?", "Pickup cost missing?", "Sold comparisons needed"],
+    "voice": "FlipCheck also shows what is missing. Asking prices are not completed sales. A verified opportunity needs five matching sold comparisons, confirmed details, and known costs. Right now, genuine sold comparisons must be imported."
+  },
+  {
+    "id": "local", "title": "Open weights. Local intelligence.", "label": "WHY OPEN INNOVATION MATTERS", "points": ["Gemma 4 via Ollama", "Local SQLite storage", "Prompts you can change"],
+    "voice": "Gemma runs locally through Ollama. I can change the prompts and repeat analysis without a hosted model bill for every listing. Discovery still uses online services. The model, records, and corrections stay on my machine."
+  },
+  {
+    "id": "closing", "title": "Built for a real repairer's workflow.", "label": "FIRST FEEDBACK / NEXT STEPS", "points": ["Positive early feedback", "Would pay for more features", "No payment yet"],
+    "voice": "My friend liked it and said he would pay for a more complete version suited to his work. He hasn't paid yet. Next: a dedicated repair and parts workflow, and a real sourcing trial. FlipCheck. Less searching. More time for the work."
+  }
+]

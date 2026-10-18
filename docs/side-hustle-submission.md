@@ -32,9 +32,13 @@ My friend is the first person I have shown FlipCheck to. People running similar 
 
 ## Demo
 
-**Demo video:** _Add the public recording link here before publishing._
+**Demo video:** [Watch or download the narrated FlipCheck walkthrough (1080p MP4)](https://raw.githubusercontent.com/quangvinhlee/FlipCheck/main/docs/demo/flipcheck-demo.mp4).
 
-<!-- Suggested recording: add laptop and camera searches; enable Facebook and choose a pickup area; scan; open a real listing and switch seller photos; inspect extracted facts and their evidence; show the specific reasons an estimate is blocked. Keep API keys and private data out of the recording. -->
+The demo combines real app interactions, animated explanations, synthetic voiceover, and captions. It shows existing marketplace results, nearby search settings, seller photos, and the evidence behind the assessments.
+
+[![Watch the FlipCheck demo](https://raw.githubusercontent.com/quangvinhlee/FlipCheck/main/docs/demo/poster.jpg)](https://raw.githubusercontent.com/quangvinhlee/FlipCheck/main/docs/demo/flipcheck-demo.mp4)
+
+<!-- The MP4 is also available locally at docs/demo/flipcheck-demo.mp4. You can upload it to a video host and replace the direct download link with that embed if preferred. -->
 
 ![FlipCheck multi-product dashboard with real marketplace results](https://raw.githubusercontent.com/quangvinhlee/FlipCheck/main/docs/dashboard.png)
 
@@ -126,4 +130,4 @@ Based on the [challenge's listed categories](https://dev.to/challenges/hacktober
 - **Best Use of Gemma:** Gemma 4 performs the local classification and evidence-grounded product extraction at the core of the workflow.
 - **Best Use of SerpApi:** SerpApi supplies live eBay Australia discovery for the saved product searches.
 
-<!-- Before publishing: replace the demo-video placeholder; review the article and AI disclosure; attach a redacted agent session or remove that optional section. Credit any teammates here if applicable. -->
+<!-- Before publishing: review the article and AI disclosure; attach a redacted agent session or remove that optional section. Credit any teammates here if applicable. -->
