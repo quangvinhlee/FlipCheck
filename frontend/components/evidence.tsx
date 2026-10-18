@@ -23,8 +23,7 @@ import {
   sourceLabel,
   pickupLine,
 } from "@/lib/format";
-import LaptopArt from "./laptop-art";
-import { CategoryIcon } from "./watchlists";
+import ListingPhotos from "./listing-photos";
 
 export function Badge({ item }: { item: Listing }) {
   const a = assessment(item);
@@ -96,22 +95,7 @@ export default function Evidence({
   return (
     <>
       <div className="detail-product">
-        {x.extraction.category === "laptop" ? (
-          <LaptopArt
-            variant={
-              x.extraction.classification === "accessory"
-                ? "accessory"
-                : x.extraction.classification === "parts_or_faulty"
-                  ? "faulty"
-                  : "normal"
-            }
-            large
-          />
-        ) : (
-          <div className="laptop-art large category-art" aria-hidden="true">
-            <CategoryIcon category={x.extraction.category} size={58} />
-          </div>
-        )}
+        <ListingPhotos key={x.id} item={x} gallery />
         <div>
           <span className="eyebrow">{sourceLabel(x).toUpperCase()}</span>
           <h3>{title}</h3>

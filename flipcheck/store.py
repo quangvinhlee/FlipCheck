@@ -78,7 +78,7 @@ class Store:
     def upsert(self, listing):
         listing = {key: value for key, value in listing.items() if key in {
             "external_id", "marketplace", "title", "description", "url", "asking_price",
-            "inbound_shipping", "currency", "country", "buying_format", "synthetic", "location_basis", "latitude", "longitude", "location_label", "location_is_precise"}}
+            "inbound_shipping", "currency", "country", "images", "buying_format", "synthetic", "location_basis", "latitude", "longitude", "location_label", "location_is_precise"}}
         timestamp = now()
         digest = hashlib.sha256(source_text(listing).encode()).hexdigest()
         with self.connection() as db:
@@ -191,3 +191,11 @@ class Store:
     def matches(self, listing_id):
         with self.connection() as db:
             return [r[0] for r in db.execute('SELECT watchlist_id FROM listing_watchlists WHERE listing_id=? ORDER BY watchlist_id',(listing_id,))]
+
+    def set_images(self, listing_id, images):
+        from .images import image_urls
+        with self.connection() as db:
+            row=db.execute('SELECT data FROM listings WHERE id=?',(listing_id,)).fetchone()
+            if not row:raise ValueError('Listing not found.')
+            value=json.loads(row[0])|{'images':image_urls(images)}
+            db.execute('UPDATE listings SET data=? WHERE id=?',(json.dumps(value),listing_id))

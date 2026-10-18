@@ -114,6 +114,7 @@ export interface Valuation {
   range?: Record<string, number>;
 }
 export interface Listing {
+  images?: string[];
   id: number;
   external_id: string;
   marketplace: string;

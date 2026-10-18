@@ -43,6 +43,8 @@ Up to ten searches can be saved. Live runs request each selected source sequenti
 
 Search requires SerpApi quota and internet. Queries leave your laptop; extraction, corrections and storage remain local by default. No automatic purchases or seller messages occur. Facebook Marketplace uses the separate location-based connector described below.
 
+Cards and the evidence view display the original listing photos when returned by eBay/Facebook, with a selectable gallery for multiple photos. Images are linked from the marketplace CDN with no referrer; they are not generated or replaced with catalogue photos. Missing/expired images show a clear unavailable state. Existing listings pick up image URLs on their next scan; image-only updates preserve extraction, decisions and price history.
+
 There is **no runtime demo, seeded listing feed, or fictional fallback**. An empty workspace stays empty until a real scan or import succeeds. Downloadable import templates contain empty arrays. Test fixtures are used only by development tools.
 
 ## Facebook Marketplace near your position

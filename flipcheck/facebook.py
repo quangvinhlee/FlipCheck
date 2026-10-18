@@ -14,6 +14,7 @@ from urllib.request import Request, urlopen
 from .domain import normalize_listing, money
 from .locations import distance_km, validate_location, coordinate
 from .providers import ProviderError
+from .images import facebook_images
 
 ACTOR='memo23~facebook-marketplace-scraper-ppe'
 TERMINAL={'SUCCEEDED','FAILED','TIMED-OUT','ABORTED'}
@@ -64,7 +65,7 @@ def parse_facebook(rows,settings):
             if isinstance(description,dict):description=description.get('text','')
             listing=normalize_listing({'marketplace':'facebook','external_id':row.get('id'),
                 'url':row.get('itemUrl',row.get('listingUrl')),'title':row.get('listingTitle',row.get('marketplace_listing_title')),
-                'description':description or '', 'asking_price':float(amount),'inbound_shipping':None,
+                'description':description or '', 'images':facebook_images(row,details), 'asking_price':float(amount),'inbound_shipping':None,
                 'currency':'AUD','country':'AU','buying_format':'fixed_price','latitude':lat,'longitude':lon,
                 'location_label':details.get('location_text') or row.get('locationText') or 'Published Marketplace location',
                 'location_is_precise':row.get('locationIsPrecise') is True})

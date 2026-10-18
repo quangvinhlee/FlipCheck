@@ -53,8 +53,8 @@ import type {
   Watchlist,
 } from "@/lib/types";
 import Modal from "./modal";
-import WatchlistManager, { CategoryIcon } from "./watchlists";
-import LaptopArt from "./laptop-art";
+import WatchlistManager from "./watchlists";
+import ListingPhotos from "./listing-photos";
 import Evidence, { Badge } from "./evidence";
 import { CorrectionForm, Help, ImportForm, SettingsForm } from "./forms";
 
@@ -831,16 +831,7 @@ function DealRow({
     <tr className={x.decision === "dismissed" ? "dismissed" : ""}>
       <td>
         <div className="listing-product">
-          <ProductArt
-            category={x.extraction.category}
-            variant={
-              x.extraction.classification === "accessory"
-                ? "accessory"
-                : x.extraction.classification === "parts_or_faulty"
-                  ? "faulty"
-                  : "normal"
-            }
-          />
+          <ListingPhotos item={x} />
           <div className="listing-text">
             <button className="listing-name" onClick={onOpen} title={x.title}>
               {f.model
@@ -967,7 +958,7 @@ function DealCard({
       className={`deal-card ${x.decision === "dismissed" ? "dismissed" : ""}`}
     >
       <div className="deal-card-art">
-        <span className="deal-card-source">EBAY AUSTRALIA</span>
+        <span className="deal-card-source">{sourceLabel(x).toUpperCase()}</span>
         <button
           className={`icon-button ${x.decision === "saved" ? "is-saved" : ""}`}
           onClick={onSave}
@@ -979,17 +970,7 @@ function DealCard({
             fill={x.decision === "saved" ? "currentColor" : "none"}
           />
         </button>
-        <ProductArt
-          category={x.extraction.category}
-          large
-          variant={
-            x.extraction.classification === "accessory"
-              ? "accessory"
-              : x.extraction.classification === "parts_or_faulty"
-                ? "faulty"
-                : "normal"
-          }
-        />
+        <ListingPhotos item={x} large />
       </div>
       <div className="deal-card-body">
         <Badge item={x} />
@@ -1340,27 +1321,6 @@ function Loading() {
       <LoaderCircle className="spin" size={26} />
       <h2>Opening your sourcing desk</h2>
       <p>Connecting to your local analysis service…</p>
-    </div>
-  );
-}
-
-function ProductArt({
-  category,
-  variant,
-  large,
-}: {
-  category?: string;
-  variant?: "normal" | "faulty" | "accessory";
-  large?: boolean;
-}) {
-  return category === "laptop" ? (
-    <LaptopArt variant={variant} large={large} />
-  ) : (
-    <div
-      className={`laptop-art category-art ${large ? "large" : ""}`}
-      aria-hidden="true"
-    >
-      <CategoryIcon category={category} size={large ? 58 : 31} />
     </div>
   );
 }

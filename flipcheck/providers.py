@@ -146,7 +146,7 @@ def parse_serpapi(result):
                 "title": item.get("title"), "description": "\n".join(str(item.get(k, "")) for k in ("condition", "subtitle", "snippet")),
                 "asking_price": price["extracted"], "inbound_shipping": shipping,
                 "currency": "AUD", "country": "AU", "buying_format": "fixed_price",
-                "has_variations": item.get("has_variations", False),
+                "has_variations": item.get("has_variations", False), "images": [item.get("thumbnail")],
             })
             listing["location_basis"] = str(location) if location else "SerpApi domestic AU search filter; confirm on original listing"
             listings.append(listing)

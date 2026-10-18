@@ -5,6 +5,7 @@ import re
 from statistics import median
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
+from .images import image_urls
 
 VERSION = "extract-v2"
 SPEC_FIELDS = ("model", "generation", "variant", "cpu", "ram_gb", "storage_gb", "condition")
@@ -121,7 +122,7 @@ def normalize_listing(raw, *, synthetic=False):
         "asking_price": as_number(money(raw.get("asking_price"))),
         "inbound_shipping": as_number(money(raw.get("inbound_shipping"), nullable=True)),
         "currency": "AUD", "country": "AU", "buying_format": "fixed_price",
-        "synthetic": synthetic,
+        "synthetic": synthetic, "images": image_urls(raw.get("images",[])),
     }
     if marketplace=='facebook':
         from .locations import coordinate
