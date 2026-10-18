@@ -28,7 +28,7 @@ The workflow includes:
 
 His repair work also highlights a gap in this MVP: the current eligibility rules exclude faulty and parts-only items from normal resale valuation. A dedicated repair/parts sourcing mode is a next step, with checks for repair costs, compatible components, and usable donor parts. The app does not yet value those purchases automatically.
 
-My friend is the intended first user. People running similar electronics repair and resale businesses are the potential paying customers. The value I want to test is whether bringing searches and listing details together saves enough repetitive checking to justify paying for it. A user trial, measured time savings, and willingness to pay still need validation.
+My friend is the first person I have shown FlipCheck to. People running similar electronics repair and resale businesses are the potential paying customers. His early feedback was positive, and he said he would pay for a more complete version with features that better fit his work. No payment has been made, and time savings have not been measured yet.
 
 ## Demo
 
@@ -109,7 +109,15 @@ For this product, the concrete benefit of open weights is control over where inf
 
 I used an AI coding assistant to iterate on the application, write regression tests, investigate provider response differences, and draft this submission. The development work is also visible in the repository's commit history.
 
-<!-- My First User: the friend described above is the intended first user. Add a visible section after he has actually tried the app, with his real feedback and payment/willingness-to-pay response. No trial or payment is claimed yet. -->
+## My First User
+
+I showed FlipCheck to the friend whose electronics repair and resale work inspired it. His feedback was encouraging: he thought the app was already good and said he would be willing to pay for it once it was more complete and had more features suited to his job.
+
+**He has not paid yet.** His willingness to pay depends on how the product develops, so this is early customer feedback rather than a completed sale.
+
+What he wants next is a more complete tool for his repair and resale workflow. That gives me a practical direction for the next iteration: support sourcing repairable devices and donor parts, and refine the features around how he actually evaluates purchases. I still need to work through the specific priorities with him.
+
+The next step is to have him use it during a real sourcing session, observe which features help, and measure whether it reduces the time he spends checking marketplaces. His feedback gives me a reason to keep building; repeat use and an actual payment will be stronger validation.
 
 ## Prize Categories
 
