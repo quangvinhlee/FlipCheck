@@ -2,36 +2,26 @@
 
 **Find your next good flip. Keep the evidence.**
 
-A local, Gemma 4-powered deal scout for Australian used-laptop resellers. FlipCheck turns eBay listings into a shortlist with supported specifications, comparable sales, and margins after explicit costs. The initial niche is ThinkPad T14 Gen 1–3.
+A local deal scout for Australian used-tech resellers, powered by Gemma 4 through Ollama. Track Legion laptops, MacBooks, cameras, and other supported products in one workspace, with independent budgets and costs for each search. Listings come from live eBay Australia searches or your own real imports.
 
-![FlipCheck dashboard showing clearly labelled synthetic examples](docs/dashboard.png)
+![FlipCheck dashboard with real marketplace results](docs/dashboard.png)
 
 ## Run locally
 
-Node.js **20.9+** (24 recommended) and Python **3.11+**. The Next.js frontend lives in `frontend/`; the local Python/SQLite analysis API lives in `flipcheck/`. No extra Python packages or database service are required.
+Node.js **20.9+** and Python **3.11+** are required. Next.js/TypeScript lives in `frontend/`; the Python/SQLite API lives in `flipcheck/`. No extra Python packages or database service are needed.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:3030**. The root command starts Next.js and the Python service together, or reuses an existing healthy local API on port 8765. The backend homepage redirects to the Next.js dashboard. Select **Explore synthetic demo** for an offline walkthrough with eight hand-authored listings and fourteen simulated sold comparisons. Demo replay does not call Gemma or SerpApi, and is visibly separated from your real workspace.
-
-For live local analysis, install [Ollama](https://ollama.com/) and the model:
+Open **http://127.0.0.1:3030**. The launcher starts Next.js and the API on port 8765, or reuses an existing healthy API. Install [Ollama](https://ollama.com/) separately and download your local model:
 
 ```sh
 ollama pull gemma4:e2b
 ```
 
-Ollama must be running. FlipCheck defaults to the locally installed `gemma4:e2b`; it never substitutes a hosted model. Use **Analyse again** in the evidence drawer to run the actual model on a demo example.
-
-## Configure live search
-
-Copy the template once, then edit `.env`:
-
-```sh
-cp .env.example .env
-```
+Copy `.env.example` to `.env` once, preserving any existing private configuration, then set:
 
 ```dotenv
 OLLAMA_URL=http://127.0.0.1:11434
@@ -39,84 +29,89 @@ OLLAMA_MODEL=gemma4:e2b
 SERPAPI_KEY=your_private_key
 ```
 
-Restart FlipCheck after changes. Shell environment variables take precedence. Keep keys in `.env`, never `.env.example`; `.env`, `.env.local`, databases, and private reports are Git-ignored. Existing `.env` files should be edited rather than overwritten.
+Restart after configuration changes. The app never substitutes a hosted model. Shell variables take precedence. `.env`, databases and private reports are Git-ignored; private keys must never use `NEXT_PUBLIC_*` variables.
 
-**Scan eBay** performs one capped search (at most one transient retry), analyses at most 20 results locally, and preserves partial results. Search requires a SerpApi account and available quota. Queries are sent to SerpApi; a live scanner is not fully offline or completely private. No automatic purchases or seller messages occur.
+## Search several products together
 
-The adapter requests eBay Australia, fixed-price results, and the domestic filter. Missing per-item location is explicitly labelled as relying on that filter; confirm location on the original listing. Fixed-price listings with a best-offer option are accepted only under the fixed-price search filter. Price ranges and unclear currencies are skipped. Availability is not verified.
+1. Click **Add search**. Set the query, category, budget, target margin, and costs.
+2. Add separate searches for the products you want, such as Legion, MacBook, and camera. Each keeps its own assumptions.
+3. Click **Scan all (N)** to run every enabled search in one job, or **Scan this search** on one search card.
+4. Use **Filter by search** to inspect one product's results. Shared listings appear once, with matching search labels. The evidence drawer lets you choose which search's costs to inspect.
+5. Pause, edit, or archive searches as needed. Archiving preserves the listings, decisions and history. Unassigned listings cannot receive a default-cost valuation.
 
-## What works
+Up to ten searches can be saved. Live runs request each enabled query sequentially, allow at most one transient retry per query, and admit at most ten listings per query (100 total before deduplication). Duplicate marketplace IDs are analysed once and linked to all matching searches. Partial failures retain successful results and show per-search outcomes and request counts.
 
-- Live eBay Australia discovery through SerpApi, with bounded retries and visible errors.
-- JSON/CSV imports, local Gemma 4 extraction, source excerpts, validation, and review states.
-- Exact-configuration sold-comparison matching, empirical resale quartiles, and decimal-based margin/ROI calculations.
-- An explicit resale assumption fallback when verified comparisons are unavailable; assumptions cannot earn an evidence-backed opportunity badge.
-- Editable watchlist, fees, shipping, repairs, packaging, risk, and labour assumptions.
-- Saved/dismissed decisions, human corrections, price observations, scan history, and JSON export.
-- A redesigned Next.js/TypeScript dashboard with table and card views, local fonts, mobile navigation, accessible dialogs, and separate synthetic/real workspaces.
-- Local SQLite persistence, with Python handling analysis and Next.js proxying only the approved loopback API endpoints.
+Search requires SerpApi quota and internet. Queries leave your laptop; extraction, corrections and storage remain local by default. No automatic purchases or seller messages occur. Facebook Marketplace discovery is not included.
 
-## Evidence before estimates
+There is **no runtime demo, seeded listing feed, or fictional fallback**. An empty workspace stays empty until a real scan or import succeeds. Downloadable import templates contain empty arrays. Test fixtures are used only by development tools.
 
-A comparison-based estimate requires at least **five** recent sales matching model, generation, CPU platform and identifier, RAM, SSD, and seller-stated condition. Five is a guardrail, not a statistical reliability guarantee. Quartiles describe that sample; they are not calibrated prediction intervals.
+## Product evidence and valuation
 
-Sold data must be supplied from genuine completed sales, with source references and actual transaction prices. User-asserted verification is not an independent audit. No real sales dataset is bundled. Import templates are available in the dashboard. See [data formats](docs/data-formats.md).
+Supported profiles: laptops, cameras, phones, tablets, consoles, and GPUs. Other products can be discovered but remain review-only. Supported category does not mean every listing will be complete enough to price.
 
-Unknown condition is not silently rated “good.” Unsupported extraction, conflicting specifications, faults, and unknown costs prevent supported opportunities. Inbound shipping must be known before margin calculation. Seller claims still need physical inspection.
+- Laptops require the stated manufacturer/model, CPU, RAM, storage and condition; gaming models also require a GPU.
+- Camera valuation distinguishes explicit body-only units from kits with an identified lens. Unspecified bundles require review.
+- Phones/tablets require storage and lock/network status. Consoles require edition, storage and a supported inclusion description; unspecified bundles require review. GPUs require VRAM.
+- Unknown, contradictory or unsupported facts remain review-only. Faulty products and accessories are excluded. Numeric evidence must include relevant capacity units and context.
 
-Default costs are **illustrative**, not current eBay rates. Estimates are in AUD and pre-tax; owner labour is excluded unless configured. TabPFN is deferred because the initial MVP does not require it and the published 3.5 weights have commercial restrictions.
+Comparison-based valuation requires **at least five** recent genuine completed sales with an exact matching product configuration and seller-stated condition. Provided material attributes participate in matching, so a known lens/GPU does not match an unknown one. A sparse sample produces no supported range. Five is a guardrail, not statistical certainty; quartiles describe the supplied sample.
 
-## Check and evaluate
+No genuine sold-price dataset is bundled. Import your own traceable sales with actual transaction prices; verification is asserted by you, not independently audited by FlipCheck. An optional explicit resale assumption is labelled as yours and cannot earn an evidence-backed opportunity badge. Missing inbound shipping prevents margin calculations. Default costs are illustrative, not current marketplace fees. Estimates are AUD and pre-tax; labour is included only as configured.
+
+The search adapter requests AU domestic fixed-price results, excludes ambiguous prices and variations, and discloses reliance on the domestic filter when item location is missing. Availability and physical condition still need checking on the original listing. See [import formats](docs/data-formats.md).
+
+## Existing workspaces
+
+The migration runs once. Your saved single query becomes a search with the same budget/costs, and existing real eBay listings keep their records and decisions. Old synthetic records are hidden from runtime state and exports without deleting the original database records. Prior extraction contracts remain visible as review-only until **Analyse again** validates them with the current contract. Restarting does not overwrite later search edits.
+
+Data lives in `.data/flipcheck.sqlite3`; back up `.data/` while the app is stopped. Do not overwrite it with test fixtures.
+
+## Checks and measured results
 
 ```sh
 python3 -m unittest discover -s tests -v
-npm run typecheck                     # Next.js route types + TypeScript
-npm run build                         # production build
-python3 scripts/evaluate.py           # real local inference on 40 synthetic holdout cases
+npm run typecheck
+npm run build
+python3 scripts/evaluate.py --split holdout
 ```
 
-The evaluation fixture has 50 hand-authored synthetic examples: 10 development and 40 holdout. It is not marketplace evidence. The recorded run classified 37/40 correctly versus 40/40 for a simple keyword baseline; 16/16 automatically admitted examples were complete laptops. This does not prove real-world accuracy or superiority. See [validation results and limitations](docs/validation.md).
+The evaluation command uses explicitly synthetic, test-only multi-product cases; it never populates your workspace. The old ThinkPad benchmark is historical and does not measure this broader contract. Real sold-price accuracy and user willingness to pay are unvalidated. See [validation](docs/validation.md) for observed results and disposable browser-test setup.
 
-The browser regression script is in [scripts/browser-smoke.cjs](scripts/browser-smoke.cjs). Playwright and axe are development dependencies; see [validation](docs/validation.md) for disposable-data test setup. Local fonts are bundled with the frontend, so the UI makes no font/CDN requests.
-
-## Storage and architecture
+## Architecture and source
 
 ```text
-eBay / local import → normalize → local Gemma 4 → validate evidence
-   → exact sold comparisons / explicit user assumption → decimal economics
-   → local SQLite → shortlist, corrections, and audit history
+live eBay / real import → normalize → local Gemma → validate source evidence
+  → exact sold comparisons / explicit user assumption → per-search economics
+  → SQLite → combined shortlist, corrections, decisions and audit history
 ```
 
-Local data lives in `.data/flipcheck.sqlite3`. Back up that directory while the app is stopped. Both servers bind only to `127.0.0.1`. Next.js checks request origin and proxies a fixed list of loopback endpoints; the Python API retains Host/origin checks and per-session tokens for mutations. It is a single-user local application, not a production public web service. No telemetry or cloud fallback is included. Pointing `OLLAMA_URL` at a remote server changes the privacy boundary.
+Both servers bind to `127.0.0.1`. Next.js proxies an allowlist of API endpoints; mutations have origin/token checks. This is a single-user local application. It includes no telemetry or cloud inference fallback. Changing `OLLAMA_URL` to a remote endpoint changes the privacy boundary. Local fonts are bundled.
 
 ```sh
-# Optional production mode; still local, with the same Python service.
+# Local production mode
 npm run build
 npm start
 
-# Optional custom ports and data location.
+# Independent development workspace
 FLIPCHECK_BACKEND_PORT=8766 FLIPCHECK_WEB_PORT=3031 FLIPCHECK_DATA_DIR=/path/to/private/data npm run dev
 ```
 
-Run `python3 -m flipcheck` separately only if you want to manage the API yourself. The root launcher does not stop a pre-existing API when it exits. Stop both owned processes with Ctrl+C. Root `.env` stores backend credentials; never add private keys to `NEXT_PUBLIC_*` variables.
+Stop processes owned by the launcher with Ctrl+C. It does not stop a pre-existing API it reused. After updating backend code, restart that API too.
 
-Frontend source map:
-
-- `frontend/app/page.tsx` and `layout.tsx`: Next.js entry and local fonts.
-- `frontend/components/dashboard.tsx`: navigation, filters, cards, and tables.
-- `frontend/components/evidence.tsx` and `forms.tsx`: evidence, settings, imports, corrections.
-- `frontend/app/globals.css`: responsive design and shared styles.
-- `frontend/app/api/[...path]/route.ts`: the server-side API bridge.
-- `frontend/lib/`: typed state, cancellable polling, formatting, and import parsing.
-
-For tests and screenshots, use a temporary data directory rather than importing fictional data into your real workspace.
+- `frontend/components/watchlists.tsx`: search cards and controls.
+- `frontend/components/dashboard.tsx`: combined feed, filters, tables/cards.
+- `frontend/components/evidence.tsx`, `forms.tsx`: evidence, per-search costs, imports and corrections.
+- `frontend/app/globals.css`: responsive styles.
+- `frontend/app/api/[...path]/route.ts`: loopback API bridge.
+- `flipcheck/products.py`: category contracts and evidence validation.
+- `flipcheck/service.py`, `store.py`: scan jobs, migrations, matches and persistence.
 
 ## Project and challenge
 
-- [Implementation plan](plan.md)
-- [Validation and measured model details](docs/validation.md)
+- [Project plan](plan.md) and [approved multi-product design](docs/superpowers/specs/2026-10-18-multiple-product-search-design.md)
+- [Validation and limitations](docs/validation.md)
 - [First-user interview worksheet](docs/first-user.md)
-- [Component licenses and privacy boundaries](docs/components.md)
+- [Component terms and privacy](docs/components.md)
 - [Challenge submission checklist](docs/submission.md)
 
-Application code: [MIT](LICENSE). Model weights, runtimes, search services, and imported data retain their own terms. No weights or private customer data are distributed here.
+Application code: [MIT](LICENSE). Model weights, runtimes, search services and imported data retain their own terms. No weights or private customer data are distributed here.

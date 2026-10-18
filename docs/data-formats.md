@@ -1,56 +1,51 @@
-# Importing evidence
+# Importing real evidence
 
-Use **Import data** in the dashboard, select listings or sold comparisons, and upload JSON/CSV or paste text. Download a template from the same dialog. Imports are validated before a batch starts. Listing imports are limited to 50 rows; sold comparisons to 1,000 rows; request size to 2 MB.
+Use **Import data**, choose listings or completed sales, and upload JSON/CSV or paste text. Listing imports must select one enabled search when several exist. Sold sales enter the shared comparison library; configuration matching determines which listings can use them. Limits: 50 listings, 1,000 sales, 2 MB per request. Templates are empty arrays and create no sample records.
 
-JSON can be an array or an object containing `listings` / `comparisons`. CSV uses identical field names, a header row, quoted fields for commas/newlines, numeric amounts without currency symbols, and literal `true`/`false` boolean values.
+JSON accepts an array or an object containing `listings` / `comparisons`. CSV uses a header row, quoted fields for commas/newlines, numeric amounts without currency symbols, and literal `true`/`false` booleans. Empty optional cells mean unknown, not zero.
 
 ## Marketplace listings
 
-```json
-{
-  "listings": [
-    {
-      "external_id": "original-marketplace-item-id",
-      "title": "Copy the actual seller title here",
-      "description": "Copy seller text, including faults; do not invent condition or specifications.",
-      "url": null,
-      "asking_price": 240,
-      "inbound_shipping": null,
-      "currency": "AUD",
-      "country": "AU",
-      "buying_format": "fixed_price",
-      "has_variations": false
-    }
-  ]
-}
-```
+| Field | Meaning |
+| --- | --- |
+| `external_id` | Original stable marketplace identity; required when a source URL cannot supply it |
+| `title`, `description` | Original seller text, including faults and uncertainty |
+| `url` | Original eBay AU item URL, or null for user-supplied records |
+| `asking_price`, `inbound_shipping` | AUD amounts; shipping may be null when unknown |
+| `currency`, `country` | `AUD`, `AU` |
+| `buying_format`, `has_variations` | `fixed_price`, boolean `false` |
 
-This is a format illustration, not a real listing. Replace it with actual source data. An eBay Australia item URL can supply the stable item ID and will be canonicalized; tracking parameters do not create duplicates. When no source URL is provided, `external_id` is required. Unknown inbound shipping is `null` (blank in CSV); it prevents margin calculation. Zero means known free shipping, never “unknown.” Other currencies, non-AU listings, auctions, and variations are rejected rather than guessed.
+An eBay URL is canonicalized to the item identity; tracking parameters do not create duplicates. Unsupported currencies/markets, auctions and variations are rejected. Zero shipping means known free shipping; null prevents margin calculation.
 
-Reimporting an identity updates its data and records a new observation if price/shipping changed. Changing source text invalidates prior extraction and human corrections; a price-only change reuses cached facts and recalculates economics.
+Reimporting the same identity updates it and retains price observations and search matches. Changing source text invalidates prior extraction and correction; a price-only update reuses facts and recalculates costs. Do not invent seller condition or specifications to fill missing fields.
 
 ## Completed sales
 
-Required fields:
-
-| Field | Meaning |
+| Fields | Meaning |
 | --- | --- |
-| `external_id`, `source`, `reference` | Stable transaction identity and traceable original record |
-| `sold_at`, `collected_at` | ISO dates `YYYY-MM-DD`, chronological and not in the future |
-| `verified`, `actual_price_known` | Both must be boolean `true`, asserted by the importer |
-| `model` | Exactly `ThinkPad T14` |
-| `generation`, `variant`, `cpu` | Generation 1–3, Intel/AMD, exact processor identifier |
-| `ram_gb`, `storage_gb` | Integer GB, using 1024 for 1 TB |
-| `condition`, `condition_evidence` | `good`, `fair`, or `excellent`, plus original supporting text |
-| `sold_price`, `shipping` | Item price excluding shipping, and separate shipping amount, in AUD |
-| `currency`, `country` | `AUD`, `AU` |
+| `external_id`, `source`, `reference` | Stable transaction ID, source and traceable original record |
+| `sold_at`, `collected_at` | `YYYY-MM-DD`, chronological, not in the future |
+| `verified`, `actual_price_known` | Both boolean `true`, asserted by the importer |
+| `category`, `brand`, `model` | Supported product category and exact identity |
+| `condition`, `condition_evidence` | `good`, `fair`, or `excellent`, with original supporting text |
+| `sold_price`, `shipping`, `currency`, `country` | Item price excluding postage, separate postage, `AUD`, `AU` |
 
-Use comparable complete laptops with standard inclusions, excluding faulty devices and materially different bundles. Accepted-offer listings with undisclosed actual prices are not suitable comparisons. FlipCheck does not independently verify transaction authenticity, inclusion differences, or source rights. Exact matching can decline many listings; do not fill missing values by guessing to improve coverage.
+Material configuration fields depend on category:
 
-Synthetic imports are not supported in the real workspace. Use the built-in **synthetic demo** to explore simulated comparisons. The app sets data provenance at the import boundary and does not trust an uploaded `synthetic` flag.
+| Category | Required configuration beyond brand/model/condition |
+| --- | --- |
+| `laptop` | `cpu`, `ram_gb`, `storage_gb`; `gpu` for gaming models |
+| `camera` | `bundle`: `body_only` or `kit`; a kit also requires exact `lens` |
+| `phone`, `tablet` | `storage_gb`, `lock_status` |
+| `console` | `edition`, `storage_gb`, `bundle`: `console_only` or `standard` |
+| `gpu` | `vram_gb` |
+
+Additional known `generation`, `variant`, `gpu`, `lens`, etc. participate in identity matching. Integer capacities use GB, with 1024 for 1 TB. Do not guess unknown attributes. Other categories and unspecified camera/console bundles cannot provide automatic valuation. Legacy ThinkPad sale rows can still be imported with their original full configuration; omitted brand/category are adapted explicitly.
+
+Undisclosed accepted-offer prices are unsuitable. FlipCheck cannot independently audit authenticity, inclusion differences or source rights. Synthetic sales and listing imports are rejected; there is no demo import mode.
 
 ## Corrections and exports
 
-The evidence drawer's **Correct** form stores your confirmed facts and a note as a human correction, recalculates the estimate, and retains a label distinguishing it from model output. Original fault/conflict signals still require review. Changed seller text invalidates the correction.
+**Correct** stores confirmed facts and a note as human input, applying the same eligibility checks. The note must explain what was confirmed. Existing fault/conflict evidence still applies; changed seller text invalidates the correction.
 
-**Export workspace** downloads the current workspace's settings, listing records with evidence and observations, comparisons, and recent scan history. The export is an audit document, not a full database restore format. Import templates and the underlying SQLite database are the supported data paths. Exports do not include API credentials; they may contain private listings and sales records, so keep them local unless intentionally sharing them.
+**Export workspace** includes real listings, watchlists, matching search IDs, per-search valuation data/history, comparisons and scans. It excludes synthetic records and API credentials. The export is an audit document, not a complete restore format. Back up SQLite for restoration, and treat exports as private source data.

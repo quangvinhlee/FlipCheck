@@ -1,6 +1,6 @@
 # Multiple Product Search Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Search Legion, MacBook, cameras, and other tech together through saved searches, with genuine data only in the app.
 
@@ -57,12 +57,12 @@
 - `Store.matches(listing_id: int) -> list[int]`.
 - `Store.snapshot(listing_id: int, valuation: dict, watchlist_id: int | None = None) -> None`.
 
-- [ ] Add failing tests: create three independent queries; reject blank query and negative budgets; reject an eleventh unarchived search; preserve disabled/archived states.
-- [ ] Add migration tests: initialize twice without duplicate searches or matches; retain prior settings and saved decisions; existing real listings link to the migrated search; synthetic listings do not.
-- [ ] Run `python3 -m unittest discover -s tests -p test_watchlists.py -v`; verify failures reflect missing interfaces.
-- [ ] Implement the validation module and schema-versioned transactional migration. Add nullable watchlist identity to historical valuation storage without rewriting prior snapshots. Existing global costs become defaults; each watchlist gets its own resolved snapshot.
-- [ ] Run watchlist tests and the existing backend suite; resolve only migration-related compatibility changes.
-- [ ] Commit and push: `feat: persist multiple product watchlists with safe migration`.
+- [x] Add failing tests: create three independent queries; reject blank query and negative budgets; reject an eleventh unarchived search; preserve disabled/archived states.
+- [x] Add migration tests: initialize twice without duplicate searches or matches; retain prior settings and saved decisions; existing real listings link to the migrated search; synthetic listings do not.
+- [x] Run `python3 -m unittest discover -s tests -p test_watchlists.py -v`; verify failures reflect missing interfaces.
+- [x] Implement the validation module and schema-versioned transactional migration. Add nullable watchlist identity to historical valuation storage without rewriting prior snapshots. Existing global costs become defaults; each watchlist gets its own resolved snapshot.
+- [x] Run watchlist tests and the existing backend suite; resolve only migration-related compatibility changes.
+- [x] Commit and push: `feat: persist multiple product watchlists with safe migration`.
 
 ### Task 2: Generalize extraction and comparison identities
 
@@ -73,12 +73,12 @@
 - `normalize_product_comparison(raw: dict) -> dict`: validates source, dates, actual sale and category identity.
 - `adapt_legacy_extraction(raw: dict) -> dict`: preserve old data and mark it for revalidation before new valuations.
 
-- [ ] Write failing product tests: Legion laptop, Apple Silicon MacBook, camera body versus kit; no Intel/AMD requirement for Apple; no RAM requirement for camera; missing exact model declines valuation.
-- [ ] Add tests: missing-on-both sides never matches; faults/accessories/injection require rejection/review; numeric evidence and unsupported values fail closed; different camera kits and different laptop configurations do not match.
-- [ ] Run `python3 -m unittest discover -s tests -p test_products.py -v` and confirm relevant failures.
-- [ ] Implement category profiles and reusable fact validation. Update Ollama schema/system prompt, contract/cache version, comparison normalization and legacy adapters. Keep decimal economics unchanged and require a non-null identity before comparison matching.
-- [ ] Run product and backend tests; update old T14-only expectations to the general contract without weakening evidence checks.
-- [ ] Commit and push: `feat: extract and compare product-specific configurations`.
+- [x] Write failing product tests: Legion laptop, Apple Silicon MacBook, camera body versus kit; no Intel/AMD requirement for Apple; no RAM requirement for camera; missing exact model declines valuation.
+- [x] Add tests: missing-on-both sides never matches; faults/accessories/injection require rejection/review; numeric evidence and unsupported values fail closed; different camera kits and different laptop configurations do not match.
+- [x] Run `python3 -m unittest discover -s tests -p test_products.py -v` and confirm relevant failures.
+- [x] Implement category profiles and reusable fact validation. Update Ollama schema/system prompt, contract/cache version, comparison normalization and legacy adapters. Keep decimal economics unchanged and require a non-null identity before comparison matching.
+- [x] Run product and backend tests; update old T14-only expectations to the general contract without weakening evidence checks.
+- [x] Commit and push: `feat: extract and compare product-specific configurations`.
 
 ### Task 3: Scan selected searches and deduplicate results
 
@@ -88,12 +88,12 @@
 - `App.state() -> dict` includes `watchlists`, listing `watchlist_ids`, `valuations` keyed by ID, and `display_watchlist_id`.
 - Per-search job records contain watchlist ID, phase, processed counts, requests, skipped results and errors.
 
-- [ ] Write failing tests with an injected fake search adapter: three independent queries called with their own budgets; overlapping IDs analysed once and linked to both; middle-query failure preserves other results; max ten admitted candidates per query.
-- [ ] Add tests: disabled/archived searches not scanned; no enabled searches fails explicitly; invalid IDs rejected before network calls; edits blocked while running; per-watchlist settings never leak.
-- [ ] Run `python3 -m unittest discover -s tests -p test_multisearch.py -v`; verify red failures.
-- [ ] Implement scan snapshotting, sequential bounded searches, per-item deduplication, request accounting and partial-failure persistence. Select earliest-created active match as combined-view valuation, not maximum estimated profit.
-- [ ] Run multi-search and backend tests and verify stable metadata after worker completion.
-- [ ] Commit and push: `feat: scan multiple watchlists into one deduplicated feed`.
+- [x] Write failing tests with an injected fake search adapter: three independent queries called with their own budgets; overlapping IDs analysed once and linked to both; middle-query failure preserves other results; max ten admitted candidates per query.
+- [x] Add tests: disabled/archived searches not scanned; no enabled searches fails explicitly; invalid IDs rejected before network calls; edits blocked while running; per-watchlist settings never leak.
+- [x] Run `python3 -m unittest discover -s tests -p test_multisearch.py -v`; verify red failures.
+- [x] Implement scan snapshotting, sequential bounded searches, per-item deduplication, request accounting and partial-failure persistence. Select earliest-created active match as combined-view valuation, not maximum estimated profit.
+- [x] Run multi-search and backend tests and verify stable metadata after worker completion.
+- [x] Commit and push: `feat: scan multiple watchlists into one deduplicated feed`.
 
 ### Task 4: Expose watchlist API and retire runtime dummy data
 
@@ -104,12 +104,12 @@
 - Listing import accepts explicit watchlist association; sold import uses category-specific schema.
 - `GET /api/state` and `/api/export` expose real records only; `/api/demo` and `/api/mode` return 404.
 
-- [ ] Add HTTP tests for create/edit/archive, scan selection, invalid payloads and existing origin/token protection.
-- [ ] Add tests with old synthetic records: state/export/matching never includes them; runtime demo routes unavailable; empty data stays empty after provider failure.
-- [ ] Run the new tests and observe the current demo/state behaviour failing them.
-- [ ] Implement service methods, server routes and templates; update the Next.js proxy allowlist. Move retained synthetic helpers under tests and remove runtime imports of `flipcheck.demo`.
-- [ ] Run full backend suite and compile checks; inspect runtime imports for fixture references.
-- [ ] Commit and push: `feat: expose multi-search API and remove demo workspace`.
+- [x] Add HTTP tests for create/edit/archive, scan selection, invalid payloads and existing origin/token protection.
+- [x] Add tests with old synthetic records: state/export/matching never includes them; runtime demo routes unavailable; empty data stays empty after provider failure.
+- [x] Run the new tests and observe the current demo/state behaviour failing them.
+- [x] Implement service methods, server routes and templates; update the Next.js proxy allowlist. Move retained synthetic helpers under tests and remove runtime imports of `flipcheck.demo`.
+- [x] Run full backend suite and compile checks; inspect runtime imports for fixture references.
+- [x] Commit and push: `feat: expose multi-search API and remove demo workspace`.
 
 ### Task 5: Deliver the multi-product Next.js workflow
 
@@ -119,21 +119,21 @@
 - `WatchlistManager` consumes watchlists, mutation handler and active job state; produces save/archive/selected-scan requests.
 - `Evidence` accepts an optional selected watchlist ID and displays that exact cost/valuation snapshot.
 
-- [ ] Extend browser scenarios: empty real workspace; add Legion, MacBook, camera searches; edit independent budgets; disable and archive; combined/individual filters; one deduplicated listing; no demo controls or synthetic records.
-- [ ] Run browser checks against a disposable database and observe missing watchlist controls.
-- [ ] Implement manager/forms, selected scan, All searches selector, per-row matched-search labels and explicit valuation source. Remove hard-coded T14/Gen 1–3 and laptop-only copy; category-aware corrections preserve unknown fields.
-- [ ] Update imports, templates, export and help copy. Preserve filters/saved states through polling and handle archived filter IDs by returning to All searches.
-- [ ] Run `npm run typecheck`, `npm run build` and browser scenarios at desktop/mobile sizes, including accessibility, API denial and disconnected-backend recovery. No fabricated data may load into the user's operational workspace; fixtures are confined to disposable test databases.
-- [ ] Commit and push: `feat: manage and scan multiple products from the dashboard`.
+- [x] Extend browser scenarios: empty real workspace; add Legion, MacBook, camera searches; edit independent budgets; disable and archive; combined/individual filters; one deduplicated listing; no demo controls or synthetic records.
+- [x] Run browser checks against a disposable database and observe missing watchlist controls.
+- [x] Implement manager/forms, selected scan, All searches selector, per-row matched-search labels and explicit valuation source. Remove hard-coded T14/Gen 1–3 and laptop-only copy; category-aware corrections preserve unknown fields.
+- [x] Update imports, templates, export and help copy. Preserve filters/saved states through polling and handle archived filter IDs by returning to All searches.
+- [x] Run `npm run typecheck`, `npm run build` and browser scenarios at desktop/mobile sizes, including accessibility, API denial and disconnected-backend recovery. No fabricated data may load into the user's operational workspace; fixtures are confined to disposable test databases.
+- [x] Commit and push: `feat: manage and scan multiple products from the dashboard`.
 
 ### Task 6: Verify live behaviour and document the shipped change
 
-- [ ] Run `python3 -m unittest discover -s tests -v`, `npm run typecheck`, `npm run build`, and `npm run test:browser`; inspect complete results.
-- [ ] Use an isolated QA database to run a bounded live search with the user-provided Legion/MacBook/camera terms, configured SerpApi and real local Gemma. Verify each selected query was sent and unmatched/unknown items remain unvalued. Do not assert real-world resale accuracy.
-- [ ] Update README, plan, data formats and validation with actual commands, migration behaviour, search/request bounds, product profiles and measured results. Replace synthetic screenshots with real results or empty UI.
-- [ ] Inspect `git diff --check`, tracked-file credential exclusion, fixture isolation and changed endpoints; review the implementation against the spec.
-- [ ] Commit and push: `docs: document real-data multi-product workflow and validation`.
+- [x] Run `python3 -m unittest discover -s tests -v`, `npm run typecheck`, `npm run build`, and `npm run test:browser`; inspect complete results.
+- [x] Use an isolated QA database to run a bounded live search with the user-provided Legion/MacBook/camera terms, configured SerpApi and real local Gemma. Verify each selected query was sent and unmatched/unknown items remain unvalued. Do not assert real-world resale accuracy.
+- [x] Update README, plan, data formats and validation with actual commands, migration behaviour, search/request bounds, product profiles and measured results. Replace synthetic screenshots with real results or empty UI.
+- [x] Inspect `git diff --check`, tracked-file credential exclusion, fixture isolation and changed endpoints; review the implementation against the spec.
+- [x] Commit and push: `docs: document real-data multi-product workflow and validation`.
 
 ## Handoff
 
-Recommended execution: Native, implementing each task sequentially in this session. The tasks share schema and API interfaces, so sequential execution reduces integration mistakes. Review of this plan is required before product changes; implementation has not started.
+Recommended execution: Native, implementing each task sequentially in this session. The tasks share schema and API interfaces, so sequential execution reduces integration mistakes. The user approved execution. Tasks 1–6 are complete; the final review findings were reproduced and fixed before the final verification. See docs/validation.md for measured results.

@@ -12,7 +12,7 @@
 | Gemma 4 `e2b` | Open-weight extraction model | [Gemma terms](https://ai.google.dev/gemma/terms), model-specific notices apply | User downloads separately; no weights in repository |
 | SerpApi | Optional eBay discovery | [API documentation](https://serpapi.com/ebay-search-api) and service terms | Receives queries and API credentials; requires internet/quota |
 | Imported records | Listing text and completed sales | Source/user rights and terms | Not redistributed in this repository |
-| Synthetic fixtures | Demo and evaluation | Included under application MIT license | Not observed transactions or customer data |
+| Synthetic fixtures | Tests and evaluation only | Included under application MIT license | Never loaded as runtime listings or sales; not observed transactions |
 
 The application license does not relicense model weights, runtimes, provider services, or imported data. Check the terms for the versions you distribute or operate.
 

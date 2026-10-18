@@ -1,4 +1,15 @@
-# FlipCheck: A Local AI Deal Scout for Used-Laptop Resellers
+# FlipCheck: Local AI Deal Scout for Used-Tech Resellers
+
+Current scope: multiple independently configured product searches, real listings only, local Gemma 4 extraction, SerpApi discovery, and a Next.js dashboard. The approved [multi-product design](docs/superpowers/specs/2026-10-18-multiple-product-search-design.md) and [implementation stages](docs/superpowers/plans/2026-10-18-multiple-product-search.md) supersede the original single-ThinkPad restrictions below. Laptops, cameras, phones, tablets, consoles and GPUs now have product profiles; unsupported/incomplete facts remain review-only. No runtime synthetic feed or demo mode remains.
+
+This is a local single-user product. Genuine sold-price accuracy, user payment and realized profit remain unvalidated. See [README](README.md) and [current validation](docs/validation.md) for actual behavior and measured limits.
+
+---
+
+## Original proposal (historical)
+
+The following records the original challenge proposal and deferred hypotheses. Its single-model scope and demo proposals are historical, not current runtime instructions.
+
 
 **Hacktoberfest 2026 Open-Source AI Challenge — Week 2: Side Hustle**
 
