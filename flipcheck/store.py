@@ -78,7 +78,7 @@ class Store:
     def upsert(self, listing):
         listing = {key: value for key, value in listing.items() if key in {
             "external_id", "marketplace", "title", "description", "url", "asking_price",
-            "inbound_shipping", "currency", "country", "buying_format", "synthetic", "location_basis"}}
+            "inbound_shipping", "currency", "country", "buying_format", "synthetic", "location_basis", "latitude", "longitude", "location_label", "location_is_precise"}}
         timestamp = now()
         digest = hashlib.sha256(source_text(listing).encode()).hexdigest()
         with self.connection() as db:
@@ -104,7 +104,7 @@ class Store:
 
     def listings(self, synthetic):
         with self.connection() as db:
-            rows = db.execute("SELECT * FROM listings WHERE marketplace=? ORDER BY id DESC", ("demo" if synthetic else "ebay_au",)).fetchall()
+            rows = db.execute("SELECT * FROM listings WHERE "+("marketplace='demo'" if synthetic else "marketplace IN ('ebay_au','facebook')")+" ORDER BY id DESC").fetchall()
             result = []
             for row in rows:
                 item = json.loads(row["data"])
@@ -161,7 +161,7 @@ class Store:
     def watchlists(self, include_archived=False):
         with self.connection() as db:
             rows=db.execute('SELECT * FROM watchlists '+('' if include_archived else 'WHERE archived=0 ')+'ORDER BY id').fetchall()
-            return [json.loads(r['data'])|{'id':r['id'],'archived':bool(r['archived'])} for r in rows]
+            return [{'sources':['ebay'],'location':None,'radius_km':25,'pickup_cost':None}|json.loads(r['data'])|{'id':r['id'],'archived':bool(r['archived'])} for r in rows]
 
     def save_watchlist(self, raw, watchlist_id=None):
         with self.connection() as db:

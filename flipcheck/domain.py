@@ -90,7 +90,16 @@ def normalize_listing(raw, *, synthetic=False):
     description = raw.get("description", "")
     if not isinstance(description, str) or len(description) > 12000:
         raise ValueError("Listing description is limited to 12,000 characters.")
-    url = safe_url(raw.get("url"), ebay=True)
+    marketplace=raw.get('marketplace','ebay_au')
+    if marketplace not in {'ebay_au','facebook'}:raise ValueError('Unsupported marketplace.')
+    url = safe_url(raw.get("url"), ebay=marketplace=='ebay_au')
+    if marketplace=='facebook':
+        parsed=urlparse(url or '')
+        match=re.fullmatch(r'/marketplace/item/(\d{5,25})/?',parsed.path)
+        if parsed.hostname not in {'facebook.com','www.facebook.com','m.facebook.com'} or not match:
+            raise ValueError('Provide an original Facebook Marketplace item URL.')
+        url=f'https://www.facebook.com/marketplace/item/{match.group(1)}/'
+        raw=raw|{'external_id':match.group(1)}
     external_id = str(raw.get("external_id", "")).strip()
     if url:
         match = re.search(r"/itm/(?:[^/]+/)?(\d{9,15})(?:[/?]|$)", url)
@@ -106,14 +115,22 @@ def normalize_listing(raw, *, synthetic=False):
         raise ValueError("Only explicitly domestic AU fixed-price listings are supported.")
     if raw.get("has_variations") is not None and raw.get("has_variations") is not False:
         raise ValueError("Multi-variation listings require manual inspection and are not supported.")
-    return {
-        "external_id": external_id, "marketplace": "demo" if synthetic else "ebay_au",
+    result = {
+        "external_id": external_id, "marketplace": "demo" if synthetic else marketplace,
         "title": title.strip(), "description": description, "url": url,
         "asking_price": as_number(money(raw.get("asking_price"))),
         "inbound_shipping": as_number(money(raw.get("inbound_shipping"), nullable=True)),
         "currency": "AUD", "country": "AU", "buying_format": "fixed_price",
         "synthetic": synthetic,
     }
+    if marketplace=='facebook':
+        from .locations import coordinate
+        if raw.get('latitude') is not None or raw.get('longitude') is not None:
+            result['latitude']=coordinate(raw.get('latitude'),-90,90)
+            result['longitude']=coordinate(raw.get('longitude'),-180,180)
+        result['location_label']=str(raw.get('location_label','Location not provided'))[:300]
+        result['location_is_precise']=raw.get('location_is_precise') is True
+    return result
 
 
 def canonical(value):
