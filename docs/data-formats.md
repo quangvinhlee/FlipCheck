@@ -10,10 +10,12 @@ JSON accepts an array or an object containing `listings` / `comparisons`. CSV us
 | --- | --- |
 | `external_id` | Original stable marketplace identity; required when a source URL cannot supply it |
 | `title`, `description` | Original seller text, including faults and uncertainty |
-| `url` | Original eBay AU item URL, or null for user-supplied records |
+| `url` | Original eBay AU or Facebook Marketplace item URL; Facebook requires its original item URL |
 | `asking_price`, `inbound_shipping` | AUD amounts; shipping may be null when unknown |
 | `currency`, `country` | `AUD`, `AU` |
 | `buying_format`, `has_variations` | `fixed_price`, boolean `false` |
+
+For Facebook imports, set `marketplace` to `facebook`; supply the original `facebook.com/marketplace/item/<id>/` URL and, if known, numeric `latitude`, `longitude`, `location_label` and boolean `location_is_precise`. Pick a Facebook-enabled search with a chosen center. Its pickup/travel allowance supplies collection costs. Unknown/out-of-radius locations cannot receive a supported valuation. Facebook URLs are canonicalized to item IDs, and IDs from different marketplaces never collide.
 
 An eBay URL is canonicalized to the item identity; tracking parameters do not create duplicates. Unsupported currencies/markets, auctions and variations are rejected. Zero shipping means known free shipping; null prevents margin calculation.
 

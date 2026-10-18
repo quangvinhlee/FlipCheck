@@ -52,6 +52,21 @@ The old [ThinkPad evaluation report](evaluation-result.json) and `fixtures/extra
 - Incomplete facts deliberately reduce pricing coverage; model extraction can still be wrong.
 - Current category profiles are conservative supported configurations, not exhaustive product catalogues.
 - Searches need internet/quota and disclose queries to SerpApi; local inference is not the same as fully offline live discovery.
-- No Facebook integration, public hosting, automatic seller contact, purchasing or billing.
+- No public hosting, automatic seller contact, purchasing or billing.
 
 Use the [first-user worksheet](first-user.md) to collect observed customer evidence.
+
+## Facebook location integration
+
+56 backend tests pass after the Facebook extension. New checks cover old-search source defaults, coordinate validation, strict distance filtering including boundary rounding, malformed nested responses, the actual nested provider contract, missing/unknown availability and AUD prices, pickup-only selection, paid-run caps and timeout abortion, per-source failure isolation, marketplace-aware deduplication, separate pickup costs and per-search distances, changed-location valuation invalidation, and explicit AU place lookup/throttling.
+
+A bounded live request for **one MacBook listing around a specified Melbourne test center**, within 25 km, completed in **49.89 seconds** using seven provider HTTP requests (including status/dataset requests). It returned a genuine AUD listing with original description and published coordinates approximately 0.397 km from the center. The live response used nested price/location fields, so the adapter was corrected and revalidated against that saved response without starting another paid run. Importing that genuine response into a disposable workspace completed local `gemma4:e2b` analysis; it remained `needs_review` with no opportunity claim. The production UI showed its Facebook source and approximate distance. The test center was explicit QA configuration, not an inferred user position. No live response or token is committed. This validates one provider path, not search completeness, product accuracy or resale value.
+
+A real Nominatim lookup for Melbourne returned three AU locations. Browser regression exercises the actual browser geolocation API with test coordinates, persisted source/radius/costs, manual lookup selection, mocked permission-denial handling, and desktop/mobile WCAG A/AA checks. It creates only disposable search configurations, never fictional marketplace records or paid scans:
+
+```sh
+# Use the disposable app/ports described above.
+FLIPCHECK_TEST_DISPOSABLE=1 FLIPCHECK_URL=http://127.0.0.1:3031 node scripts/facebook-browser-smoke.cjs
+```
+
+A provider may return fewer records than requested or fail entirely. Missing coordinates are excluded rather than labelled nearby. Published pins and straight-line distance do not verify physical location or travel distance. No live seller contact or purchase was performed.

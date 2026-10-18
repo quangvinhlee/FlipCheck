@@ -11,6 +11,8 @@
 | Ollama | Local inference runtime | [Ollama source and license](https://github.com/ollama/ollama) | User installs separately; default endpoint is loopback |
 | Gemma 4 `e2b` | Open-weight extraction model | [Gemma terms](https://ai.google.dev/gemma/terms), model-specific notices apply | User downloads separately; no weights in repository |
 | SerpApi | Optional eBay discovery | [API documentation](https://serpapi.com/ebay-search-api) and service terms | Receives queries and API credentials; requires internet/quota |
+| Apify Marketplace connector | Optional Facebook discovery | [Actor terms/pricing](https://apify.com/memo23/facebook-marketplace-scraper-ppe) and Apify terms | Sends query/rounded center; requires a private token and credit; no Facebook cookies |
+| Nominatim / OpenStreetMap | Explicit AU place lookup | [Usage policy](https://operations.osmfoundation.org/policies/nominatim/) / source data terms | User-initiated lookup only, no autocomplete, at most one request/second |
 | Imported records | Listing text and completed sales | Source/user rights and terms | Not redistributed in this repository |
 | Synthetic fixtures | Tests and evaluation only | Included under application MIT license | Never loaded as runtime listings or sales; not observed transactions |
 
