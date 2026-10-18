@@ -172,6 +172,70 @@ const base = process.env.FLIPCHECK_URL || "http://127.0.0.1:3030";
       ).status(),
       413,
     );
+    // UI-only fixture: no invented listing is ever written to SQLite.
+    const [a, b] = s.watchlists;
+    const valuation = (w) => ({
+      method: "unavailable",
+      comparisons: [],
+      count: 0,
+      scenarios: {},
+      opportunity: false,
+      reason: "Test-only valuation",
+      costs: w,
+      valued_at: new Date().toISOString(),
+      watchlist_id: w.id,
+    });
+    const fixture = {
+      id: -1,
+      external_id: "browser-test-only",
+      marketplace: "ebay_au",
+      title: "TEST ONLY: shared listing",
+      description: "Browser-only regression fixture",
+      asking_price: 300,
+      inbound_shipping: 0,
+      synthetic: false,
+      url: null,
+      extraction: {
+        category: "laptop",
+        classification: "complete_product",
+        status: "needs_review",
+        facts: {},
+        evidence: {},
+        unknown_fields: [],
+        errors: [],
+        reason: "Test only",
+      },
+      watchlist_ids: [a.id, b.id],
+      display_watchlist_id: a.id,
+      valuations: { [a.id]: valuation(a), [b.id]: valuation(b) },
+      valuation: valuation(a),
+      observations: [],
+      decision: "new",
+      first_seen: new Date().toISOString(),
+      last_seen: new Date().toISOString(),
+    };
+    await page.route("**/api/state", (r) =>
+      r.fulfill({ json: { ...s, listings: [fixture] } }),
+    );
+    await page.setViewportSize({ width: 1512, height: 1050 });
+    await page.reload();
+    await page
+      .getByRole("combobox", { name: "Filter by search" })
+      .selectOption(String(b.id));
+    await page
+      .getByRole("button", { name: fixture.title, exact: true })
+      .click();
+    assert.equal(
+      await page
+        .getByRole("combobox", { name: "Valuation and costs for search" })
+        .inputValue(),
+      String(b.id),
+    );
+    await axe("evidence for filtered search");
+    await page
+      .getByRole("button", { name: "Close evidence", exact: true })
+      .click();
+    await page.unroute("**/api/state");
     await page.route("**/api/state", (r) =>
       r.fulfill({ status: 503, json: { error: "QA service unavailable" } }),
     );

@@ -487,7 +487,10 @@ export function CorrectionForm({
     );
     const parts = Object.entries(values)
       .filter(([, v]) => v !== null)
-      .map(([k, v]) => `${k}: ${v}`);
+      .map(
+        ([k, v]) =>
+          `${k}: ${v}${k === "ram_gb" ? "GB RAM" : k === "storage_gb" ? "GB SSD" : k === "vram_gb" ? "GB VRAM" : ""}`,
+      );
     const note = `User confirmed: ${parts.join("; ")}. ${form.note}`;
     const extraction = {
       category,

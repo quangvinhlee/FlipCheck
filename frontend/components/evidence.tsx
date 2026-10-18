@@ -42,7 +42,7 @@ export default function Evidence({
   onClose: () => void;
 }) {
   const [searchId, setSearchId] = useState(
-    String(item.display_watchlist_id || ""),
+    String(item.valuation.watchlist_id || item.display_watchlist_id || ""),
   );
   const x = { ...item, valuation: item.valuations[searchId] || item.valuation },
     f = x.extraction.facts,

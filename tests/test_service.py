@@ -93,3 +93,11 @@ class ServiceTests(unittest.TestCase):
         accepted,skipped=parse_serpapi({'search_parameters':params,'organic_results':[row,row|{'price':{'from':1,'to':2}}]})
         self.assertEqual(len(accepted),1);self.assertEqual(accepted[0]['inbound_shipping'],15);self.assertEqual(len(skipped),1)
         accepted,_=parse_serpapi({'organic_results':[row]});self.assertEqual(accepted,[])
+
+    def test_archiving_all_matches_disables_default_cost_valuation(self):
+        self.app.start('import',[self.imported()]);self.wait_job()
+        self.app.archive_watchlist(self.store.watchlists()[0]['id'])
+        item=self.app.state()['listings'][0]
+        self.assertEqual(item['watchlist_ids'],[])
+        self.assertFalse(item['valuation']['opportunity'])
+        self.assertEqual(item['valuation']['method'],'unavailable')

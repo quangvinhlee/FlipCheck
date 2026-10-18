@@ -33,7 +33,7 @@ class App:
             active=[i for i in ids if by_id[i]['enabled']]
             selected=(active or ids or [None])[0]
             valuations={str(i):value_listing(item,item['extraction'],comparisons,by_id[i])|{'watchlist_id':i} for i in ids}
-            fallback=value_listing(item,item['extraction'],comparisons,self.store.config('settings'))|{'watchlist_id':None}
+            fallback=value_listing(item,item['extraction']|{'status':'needs_review'},[],self.store.config('settings'))|{'watchlist_id':None,'reason':'Assign this listing to an available search before valuation.'}
             item|={'watchlist_ids':ids,'display_watchlist_id':selected,'valuations':valuations,
                    'valuation':valuations.get(str(selected),fallback)}
             listings.append(item)

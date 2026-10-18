@@ -3,7 +3,7 @@ import re
 from datetime import date
 from .domain import canonical, local_date, money, as_number
 
-VERSION='product-v1'
+VERSION='product-v2'
 COMMON=('brand','model','condition')
 ATTRIBUTES=('generation','variant','cpu','ram_gb','storage_gb','gpu','bundle','lens','edition','vram_gb','lock_status')
 FIELDS=COMMON+ATTRIBUTES
@@ -12,7 +12,7 @@ PRODUCT_PROFILES={
     'laptop':('cpu','ram_gb','storage_gb'),
     'camera':('bundle',),
     'phone':('storage_gb','lock_status'), 'tablet':('storage_gb','lock_status'),
-    'console':('edition','bundle'), 'gpu':('vram_gb',), 'other':(),
+    'console':('edition','bundle','storage_gb'), 'gpu':('vram_gb',), 'other':(),
 }
 CLASSIFICATIONS={'complete_product','accessory','parts_or_faulty','unrelated','uncertain'}
 
@@ -21,24 +21,23 @@ def required_fields(category,facts):
     required=list(COMMON)+list(PRODUCT_PROFILES.get(category,()))
     if category=='camera' and facts.get('bundle')=='kit':required.append('lens')
     if category=='laptop' and (re.search(r'legion|gaming|rog|alienware|predator',str(facts.get('model','')),re.I) or facts.get('gpu')):required.append('gpu')
-    if category=='console' and facts.get('bundle') not in {'console_only','standard'}:required.append('storage_gb')
     return required
 
 
 def grounded(field,value,quote):
     if field in NUMERIC:
         if type(value) is not int or not 1<=value<=8192:return False
-        units=[str(value)]
-        if field=='storage_gb' and value%1024==0:units.append(str(value//1024)+r'\s*tb')
-        return any(re.search(r'(?<!\d)'+u+r'(?!\d)',quote.lower()) for u in units)
+        capacity=rf'(?<![\d.]){value}\s*gb\b'
+        if field=='storage_gb' and value%1024==0:capacity=rf'(?:{capacity}|(?<![\d.]){value//1024}\s*tb\b)'
+        context={'ram_gb':r'(?:ram|memory)', 'storage_gb':r'(?:ssd|hdd|storage|emmc|nvme)', 'vram_gb':r'(?:vram|gddr[34567x]*)'}[field]
+        return bool(re.search(rf'(?:{capacity}\s*{context}\b|\b{context}\s*[:=-]?\s*{capacity})',quote,re.I))
     if not isinstance(value,str) or not value.strip() or len(value)>200:return False
     if field=='condition':
         return value in {'good','fair','excellent'} and bool(re.search(r'\b'+value+r'\b',quote,re.I)) and not re.search(r'\bnot\b',quote,re.I)
     if field=='bundle':
-        return value in {'body_only','kit','console_only','standard','bundle'} and {
-            'body_only':r'body[ -]?only|body', 'kit':r'kit|with.*lens|lens.*included',
-            'console_only':r'console[ -]?only','standard':r'standard','bundle':r'bundle',
-        }[value] is not None and bool(re.search({'body_only':r'body','kit':r'kit|lens','console_only':r'console','standard':r'standard','bundle':r'bundle'}[value],quote,re.I))
+        patterns={'body_only':r'body[ _-]?only', 'kit':r'kit|with.*lens|lens.*included',
+                  'console_only':r'console[ _-]?only','standard':r'standard','bundle':r'bundle'}
+        return value in patterns and bool(re.search(patterns[value],quote,re.I))
     return canonical(value) in canonical(quote)
 
 
@@ -66,6 +65,9 @@ def validate_product_extraction(draft,text):
     if re.search(r'\b(no charger|missing charger|not tested|untested|not (?:in )?(?:good|excellent|fair))\b',lower):errors.append('Unconfirmed hardware, missing inclusions or negated condition requires review.')
     rams=set(re.findall(r'\b(\d+)\s*gb\s*(?:ram|memory)\b',lower))
     if len(rams)>1:errors.append('Conflicting memory specifications.')
+    if not valid_configuration(category,facts):errors.append('Unsupported or incomplete bundle configuration.')
+    if category=='camera' and facts.get('bundle')=='body_only' and re.search(r'with[^.;\n]*lens|lens[^.;\n]*included',lower):
+        errors.append('Body-only claim conflicts with an included lens.')
     missing=[key for key in required_fields(category,facts) if facts.get(key) is None]
     if category=='other':missing.append('supported_product_profile')
     status='rejected' if classification in {'accessory','parts_or_faulty','unrelated'} else ('eligible' if classification=='complete_product' and not errors and not missing else 'needs_review')
@@ -75,10 +77,17 @@ def validate_product_extraction(draft,text):
     return {'classification':classification,'category':category,'facts':facts,'evidence':evidence,'errors':errors,'unknown_fields':missing,'status':status,'reason':reason,'contract_version':VERSION}
 
 
+def valid_configuration(category,facts):
+    if category=='camera':return facts.get('bundle') in {'body_only','kit'}
+    if category=='console':return facts.get('bundle') in {'console_only','standard'}
+    return True
+
+
 def product_identity(extraction):
     facts=extraction.get('facts',{})
     category=extraction.get('category',facts.get('category'))
     if category not in PRODUCT_PROFILES or category=='other' or extraction.get('status')!='eligible':return None
+    if not valid_configuration(category,facts):return None
     if any(facts.get(k) is None or facts.get(k)=='' for k in required_fields(category,facts)):return None
     # All supplied material attributes participate: unknown cannot match a known generation/lens/GPU.
     return (category,)+tuple((key,canonical(facts.get(key))) for key in FIELDS if key in COMMON or key in ATTRIBUTES)
@@ -90,7 +99,7 @@ def adapt_legacy_extraction(raw):
     facts={k:raw.get('facts',{}).get(k) for k in FIELDS}
     if facts.get('generation') is not None:facts['generation']=str(facts['generation'])
     return raw|{'classification':'complete_product' if raw.get('classification')=='complete_laptop' else raw.get('classification','uncertain'),
-                'category':'laptop','facts':facts,'status':'needs_review','reason':'Saved extraction uses the previous product contract. Analyse again to validate this product.','legacy':True}
+                'category':raw.get('category','laptop'),'facts':facts,'status':'needs_review','reason':'Saved extraction uses the previous product contract. Analyse again to validate this product.','legacy':True}
 
 
 def normalize_product_comparison(raw):

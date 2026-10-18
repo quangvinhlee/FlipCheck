@@ -32,7 +32,9 @@ brand is the printed manufacturer. condition is good/fair/excellent ONLY when ex
 generation, edition, variant, cpu, gpu, lens and lock_status are exact printed strings, or null.
 ram_gb, storage_gb, vram_gb are integers in GB (1TB=1024), or null. Apple Silicon needs no Intel/AMD variant.
 For a camera, bundle is body_only only when stated body only, kit for an included lens, otherwise null;
-include exact lens identifier for kit. For console bundle use console_only/standard/bundle only with evidence.
+include exact lens identifier for kit. For console bundle use console_only/standard only with evidence; other bundles require review.
+Console storage capacity is required even for standard/console-only units.
+Numeric evidence must include capacity units and relevant RAM/SSD/storage/VRAM context.
 Other fields are null when inapplicable. For gaming laptops extract the discrete GPU when stated.
 Accessories alone are accessory, faulty or locked hardware parts_or_faulty. Do not assume unseen hardware works.
 reason is a short explanation from source text. Keep evidence short and exact."""
